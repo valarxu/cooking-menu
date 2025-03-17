@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .profile-header {
+            background-color: var(--primary-color);
+            padding: 30px 16px;
+            color: white;
+            position: relative;
+        }
+        
+        .settings-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 40px;
+            margin-right: 20px;
+            border: 3px solid white;
+            object-fit: cover;
+        }
+        
+        .user-name {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .user-id {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .user-stats {
+            display: flex;
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        
+        .user-stat {
+            flex: 1;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-stat:last-child {
+            border-right: none;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 16px 10px;
+        }
+        
+        .menu-list {
+            background-color: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0 16px 20px;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+        
+        .menu-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            color: var(--primary-color);
+        }
+        
+        .menu-text {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .menu-arrow {
+            color: var(--dark-gray);
+        }
+        
+        .logout-button {
+            margin: 20px 16px;
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            color: var(--danger);
+            font-weight: 500;
+        }
+        
+        .version-info {
+            text-align: center;
+            color: var(--dark-gray);
+            font-size: 12px;
+            margin-top: 20px;
+            margin-bottom: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar">
+        <div class="time" style="color: white;">14:30</div>
+        <div class="icons" style="color: white;">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 个人信息头部 -->
+    <div class="profile-header">
+        <div class="settings-button" onclick="navigateTo('settings.html')">
+            <i class="fas fa-cog"></i>
+        </div>
+        
+        <div class="user-info">
+            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="用户头像" class="user-avatar">
+            <div>
+                <div class="user-name">小厨师</div>
+                <div class="user-id">ID: 12345678</div>
+            </div>
+        </div>
+        
+        <div class="user-stats">
+            <div class="user-stat">
+                <div class="stat-value">3</div>
+                <div class="stat-label">我的餐厅</div>
+            </div>
+            <div class="user-stat">
+                <div class="stat-value">24</div>
+                <div class="stat-label">我的菜品</div>
+            </div>
+            <div class="user-stat">
+                <div class="stat-value">12</div>
+                <div class="stat-label">历史订单</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的订单 -->
+    <div class="section-title">我的订单</div>
+    <div class="menu-list">
+        <div class="menu-item" onclick="navigateTo('order-detail.html')">
+            <div class="menu-icon">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="menu-text">全部订单</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="showToast('待付款功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="menu-text">待付款</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="navigateTo('order-detail.html')">
+            <div class="menu-icon">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <div class="menu-text">准备中</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="showToast('已完成功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="menu-text">已完成</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的服务 -->
+    <div class="section-title">我的服务</div>
+    <div class="menu-list">
+        <div class="menu-item" onclick="navigateTo('restaurant-detail.html')">
+            <div class="menu-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="menu-text">我的餐厅</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="navigateTo('menu-management.html')">
+            <div class="menu-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <div class="menu-text">我的菜单</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="showToast('收藏功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="menu-text">我的收藏</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="showToast('地址管理功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="menu-text">地址管理</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更多服务 -->
+    <div class="section-title">更多服务</div>
+    <div class="menu-list">
+        <div class="menu-item" onclick="showToast('帮助中心功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <div class="menu-text">帮助中心</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="showToast('意见反馈功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-comment-alt"></i>
+            </div>
+            <div class="menu-text">意见反馈</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        <div class="menu-item" onclick="showToast('关于我们功能即将上线')">
+            <div class="menu-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="menu-text">关于我们</div>
+            <div class="menu-arrow">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 退出登录 -->
+    <div class="logout-button" onclick="navigateTo('welcome.html')">
+        退出登录
+    </div>
+
+    <!-- 版本信息 -->
+    <div class="version-info">
+        家庭餐厅 v1.0.0
+    </div>
+
+    <!-- iOS 底部导航栏 -->
+    <div class="ios-tab-bar">
+        <div class="tab-item" data-page="home.html" onclick="navigateTo('home.html')">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" data-page="menu-management.html" onclick="navigateTo('menu-management.html')">
+            <i class="fas fa-utensils"></i>
+            <span>菜单</span>
+        </div>
+        <div class="tab-item" data-page="order.html" onclick="navigateTo('order.html')">
+            <i class="fas fa-shopping-cart"></i>
+            <span>点餐</span>
+        </div>
+        <div class="tab-item active" data-page="profile.html" onclick="navigateTo('profile.html')">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html> 

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菜单管理 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .menu-header {
+            padding: 20px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .menu-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .add-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background-color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .restaurant-selector {
+            padding: 15px 16px;
+            background-color: var(--white);
+            margin-bottom: 10px;
+        }
+        
+        .restaurant-dropdown {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--medium-gray);
+            background-color: var(--white);
+            font-size: 16px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23757575' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+        }
+        
+        .category-tabs {
+            display: flex;
+            overflow-x: auto;
+            background-color: var(--white);
+            padding: 10px 16px;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .category-tab {
+            padding: 8px 16px;
+            border-radius: 16px;
+            background-color: var(--light-gray);
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .category-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .dish-list {
+            padding: 10px 16px;
+        }
+        
+        .dish-item {
+            display: flex;
+            background-color: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        
+        .dish-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+        }
+        
+        .dish-content {
+            padding: 12px;
+            flex: 1;
+        }
+        
+        .dish-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .dish-description {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 8px;
+        }
+        
+        .dish-price {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .dish-actions {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+        }
+        
+        .dish-action {
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--dark-gray);
+        }
+        
+        .dish-action.edit {
+            color: var(--primary-color);
+        }
+        
+        .dish-action.delete {
+            color: var(--danger);
+        }
+        
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--dark-gray);
+        }
+        
+        .empty-state-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: var(--medium-gray);
+        }
+        
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar {
+            margin: 10px 16px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--white);
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dark-gray);
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar">
+        <div class="time">14:30</div>
+        <div class="icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 菜单头部 -->
+    <div class="menu-header">
+        <div class="menu-title">菜单管理</div>
+        <div class="add-button" onclick="navigateTo('add-dish.html')">
+            <i class="fas fa-plus"></i>
+        </div>
+    </div>
+
+    <!-- 餐厅选择器 -->
+    <div class="restaurant-selector">
+        <select class="restaurant-dropdown">
+            <option value="1">家的味道</option>
+            <option value="2">朋友聚会</option>
+            <option value="3">健康餐厅</option>
+        </select>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="搜索菜品">
+    </div>
+
+    <!-- 分类标签 -->
+    <div class="category-tabs">
+        <div class="category-tab active">全部</div>
+        <div class="category-tab">主菜</div>
+        <div class="category-tab">配菜</div>
+        <div class="category-tab">汤类</div>
+        <div class="category-tab">甜点</div>
+        <div class="category-tab">饮品</div>
+    </div>
+
+    <!-- 菜品列表 -->
+    <div class="dish-list">
+        <div class="dish-item">
+            <img src="https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="红烧肉">
+            <div class="dish-content">
+                <div class="dish-title">红烧肉</div>
+                <div class="dish-description">经典家常菜，肥而不腻</div>
+                <div class="dish-price">¥38</div>
+                <div class="dish-actions">
+                    <div class="dish-action edit" onclick="navigateTo('add-dish.html')">
+                        <i class="fas fa-pencil-alt"></i>
+                    </div>
+                    <div class="dish-action delete" onclick="showToast('删除成功')">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dish-item">
+            <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="清蒸鱼">
+            <div class="dish-content">
+                <div class="dish-title">清蒸鱼</div>
+                <div class="dish-description">鲜美可口，营养丰富</div>
+                <div class="dish-price">¥48</div>
+                <div class="dish-actions">
+                    <div class="dish-action edit" onclick="navigateTo('add-dish.html')">
+                        <i class="fas fa-pencil-alt"></i>
+                    </div>
+                    <div class="dish-action delete" onclick="showToast('删除成功')">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dish-item">
+            <img src="https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="番茄炒蛋">
+            <div class="dish-content">
+                <div class="dish-title">番茄炒蛋</div>
+                <div class="dish-description">简单美味，老少皆宜</div>
+                <div class="dish-price">¥18</div>
+                <div class="dish-actions">
+                    <div class="dish-action edit" onclick="navigateTo('add-dish.html')">
+                        <i class="fas fa-pencil-alt"></i>
+                    </div>
+                    <div class="dish-action delete" onclick="showToast('删除成功')">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dish-item">
+            <img src="https://images.unsplash.com/photo-1525755662778-989d0524087e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="宫保鸡丁">
+            <div class="dish-content">
+                <div class="dish-title">宫保鸡丁</div>
+                <div class="dish-description">麻辣鲜香，下饭神器</div>
+                <div class="dish-price">¥32</div>
+                <div class="dish-actions">
+                    <div class="dish-action edit" onclick="navigateTo('add-dish.html')">
+                        <i class="fas fa-pencil-alt"></i>
+                    </div>
+                    <div class="dish-action delete" onclick="showToast('删除成功')">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iOS 底部导航栏 -->
+    <div class="ios-tab-bar">
+        <div class="tab-item" data-page="home.html" onclick="navigateTo('home.html')">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item active" data-page="menu-management.html" onclick="navigateTo('menu-management.html')">
+            <i class="fas fa-utensils"></i>
+            <span>菜单</span>
+        </div>
+        <div class="tab-item" data-page="order.html" onclick="navigateTo('order.html')">
+            <i class="fas fa-shopping-cart"></i>
+            <span>点餐</span>
+        </div>
+        <div class="tab-item" data-page="profile.html" onclick="navigateTo('profile.html')">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html> 

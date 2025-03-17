@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐厅详情 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .restaurant-cover {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+        
+        .restaurant-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .restaurant-cover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
+        }
+        
+        .restaurant-header {
+            padding: 20px 16px;
+            background-color: var(--white);
+            border-radius: 20px 20px 0 0;
+            margin-top: -20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .restaurant-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .restaurant-description {
+            color: var(--dark-gray);
+            margin-bottom: 15px;
+        }
+        
+        .restaurant-stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .restaurant-stat {
+            display: flex;
+            align-items: center;
+            color: var(--dark-gray);
+            font-size: 14px;
+        }
+        
+        .restaurant-stat i {
+            margin-right: 5px;
+        }
+        
+        .restaurant-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .restaurant-action {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 500;
+        }
+        
+        .restaurant-action.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .restaurant-action i {
+            margin-right: 5px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 20px 16px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title .view-all {
+            font-size: 14px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .dish-list {
+            padding: 0 16px;
+        }
+        
+        .member-list {
+            padding: 0 16px;
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding-bottom: 10px;
+        }
+        
+        .member-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+        }
+        
+        .member-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            margin-bottom: 8px;
+            object-fit: cover;
+        }
+        
+        .member-name {
+            font-size: 12px;
+            text-align: center;
+            max-width: 70px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .add-member {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 70px;
+        }
+        
+        .add-member-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .add-member-text {
+            font-size: 12px;
+            color: var(--primary-color);
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 2;
+        }
+        
+        .edit-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar">
+        <div class="time">14:30</div>
+        <div class="icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 餐厅封面 -->
+    <div class="restaurant-cover">
+        <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="家的味道">
+        <div class="restaurant-cover-overlay"></div>
+        <div class="back-button" onclick="navigateTo('home.html')">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        <div class="edit-button" onclick="showToast('编辑功能即将上线')">
+            <i class="fas fa-pencil-alt"></i>
+        </div>
+    </div>
+
+    <!-- 餐厅信息 -->
+    <div class="restaurant-header">
+        <h1 class="restaurant-title">家的味道</h1>
+        <p class="restaurant-description">家庭聚餐的理想选择，提供各种家常菜肴</p>
+        
+        <div class="restaurant-stats">
+            <div class="restaurant-stat">
+                <i class="fas fa-utensils"></i>
+                <span>12 个菜品</span>
+            </div>
+            <div class="restaurant-stat">
+                <i class="fas fa-users"></i>
+                <span>5 位成员</span>
+            </div>
+            <div class="restaurant-stat">
+                <i class="fas fa-history"></i>
+                <span>创建于 2025-03-15</span>
+            </div>
+        </div>
+        
+        <div class="restaurant-actions">
+            <div class="restaurant-action" onclick="navigateTo('add-dish.html')">
+                <i class="fas fa-plus"></i>
+                <span>添加菜品</span>
+            </div>
+            <div class="restaurant-action primary" onclick="navigateTo('order.html')">
+                <i class="fas fa-utensils"></i>
+                <span>开始点餐</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content" style="padding-top: 0;">
+        <!-- 成员列表 -->
+        <div class="section-title">
+            <span>餐厅成员</span>
+            <a href="#" class="view-all" onclick="showToast('查看全部成员功能即将上线')">查看全部</a>
+        </div>
+        
+        <div class="member-list">
+            <div class="member-item">
+                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="成员头像" class="member-avatar">
+                <div class="member-name">我自己 (创建者)</div>
+            </div>
+            
+            <div class="member-item">
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="成员头像" class="member-avatar">
+                <div class="member-name">张三</div>
+            </div>
+            
+            <div class="member-item">
+                <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="成员头像" class="member-avatar">
+                <div class="member-name">李四</div>
+            </div>
+            
+            <div class="member-item">
+                <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="成员头像" class="member-avatar">
+                <div class="member-name">王五</div>
+            </div>
+            
+            <div class="member-item">
+                <img src="https://randomuser.me/api/portraits/women/90.jpg" alt="成员头像" class="member-avatar">
+                <div class="member-name">赵六</div>
+            </div>
+            
+            <div class="add-member" onclick="showToast('邀请成员功能即将上线')">
+                <div class="add-member-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="add-member-text">邀请</div>
+            </div>
+        </div>
+        
+        <!-- 菜品列表 -->
+        <div class="section-title">
+            <span>菜品列表</span>
+            <a href="#" class="view-all" onclick="navigateTo('menu-management.html')">管理菜单</a>
+        </div>
+        
+        <div class="dish-list">
+            <div class="dish-card">
+                <img src="https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="红烧肉">
+                <div class="content">
+                    <div class="title">红烧肉</div>
+                    <div class="description">经典家常菜，肥而不腻</div>
+                    <div class="flex justify-between items-center">
+                        <span class="price">¥38</span>
+                        <button class="ios-button small" onclick="addToCart(1, '红烧肉', 38)">添加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dish-card">
+                <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="清蒸鱼">
+                <div class="content">
+                    <div class="title">清蒸鱼</div>
+                    <div class="description">鲜美可口，营养丰富</div>
+                    <div class="flex justify-between items-center">
+                        <span class="price">¥48</span>
+                        <button class="ios-button small" onclick="addToCart(2, '清蒸鱼', 48)">添加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dish-card">
+                <img src="https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="番茄炒蛋">
+                <div class="content">
+                    <div class="title">番茄炒蛋</div>
+                    <div class="description">简单美味，老少皆宜</div>
+                    <div class="flex justify-between items-center">
+                        <span class="price">¥18</span>
+                        <button class="ios-button small" onclick="addToCart(3, '番茄炒蛋', 18)">添加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dish-card">
+                <img src="https://images.unsplash.com/photo-1525755662778-989d0524087e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="宫保鸡丁">
+                <div class="content">
+                    <div class="title">宫保鸡丁</div>
+                    <div class="description">麻辣鲜香，下饭神器</div>
+                    <div class="flex justify-between items-center">
+                        <span class="price">¥32</span>
+                        <button class="ios-button small" onclick="addToCart(4, '宫保鸡丁', 32)">添加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ios-card text-center" onclick="navigateTo('add-dish.html')">
+                <i class="fas fa-plus text-2xl text-green-600 mb-2"></i>
+                <div class="font-medium text-green-600">添加更多菜品</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iOS 底部导航栏 -->
+    <div class="ios-tab-bar">
+        <div class="tab-item active" data-page="home.html" onclick="navigateTo('home.html')">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" data-page="menu-management.html" onclick="navigateTo('menu-management.html')">
+            <i class="fas fa-utensils"></i>
+            <span>菜单</span>
+        </div>
+        <div class="tab-item" data-page="order.html" onclick="navigateTo('order.html')">
+            <i class="fas fa-shopping-cart"></i>
+            <span>点餐</span>
+        </div>
+        <div class="tab-item" data-page="profile.html" onclick="navigateTo('profile.html')">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html> 

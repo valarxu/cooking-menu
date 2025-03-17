@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background-color: var(--primary-color);
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .welcome-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .app-logo {
+            width: 120px;
+            height: 120px;
+            background-color: white;
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .app-logo i {
+            font-size: 60px;
+            color: var(--primary-color);
+        }
+        
+        .welcome-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .welcome-buttons {
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .welcome-button {
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .welcome-button.outline {
+            background-color: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+        
+        .welcome-footer {
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar" style="background-color: transparent;">
+        <div class="time" style="color: white;">14:30</div>
+        <div class="icons" style="color: white;">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 欢迎内容 -->
+    <div class="welcome-content">
+        <div class="app-logo">
+            <i class="fas fa-utensils"></i>
+        </div>
+        <h1 class="welcome-title">家庭餐厅</h1>
+        <p class="welcome-subtitle">一起决定今天吃什么，共享美食时光</p>
+        
+        <div class="welcome-buttons">
+            <button class="welcome-button" onclick="navigateTo('login.html')">登录</button>
+            <button class="welcome-button outline" onclick="navigateTo('register.html')">注册</button>
+        </div>
+    </div>
+    
+    <div class="welcome-footer">
+        <p>© 2025 家庭餐厅 App</p>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html> 

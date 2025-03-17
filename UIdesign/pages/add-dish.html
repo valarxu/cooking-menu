@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加菜品 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .page-header {
+            padding: 15px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--medium-gray);
+            background-color: var(--white);
+        }
+        
+        .back-button {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 16px;
+        }
+        
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .save-button {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .form-container {
+            padding: 20px 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--white);
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+        }
+        
+        .form-textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--white);
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+        }
+        
+        .image-upload {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            background-color: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .image-upload-icon {
+            font-size: 40px;
+            color: var(--medium-gray);
+            margin-bottom: 10px;
+        }
+        
+        .image-upload-text {
+            color: var(--dark-gray);
+            font-size: 14px;
+        }
+        
+        .image-preview {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .image-preview.show {
+            display: block;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--white);
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23757575' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+        }
+        
+        .price-input {
+            position: relative;
+        }
+        
+        .price-input input {
+            padding-left: 30px;
+        }
+        
+        .price-input::before {
+            content: "¥";
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dark-gray);
+            font-weight: 500;
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .tag {
+            background-color: var(--light-gray);
+            border-radius: 16px;
+            padding: 8px 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tag.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tag i {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar">
+        <div class="time">14:30</div>
+        <div class="icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="back-button" onclick="navigateTo('restaurant-detail.html')">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        <div class="page-title">添加菜品</div>
+        <div class="save-button" onclick="navigateTo('restaurant-detail.html')">保存</div>
+    </div>
+
+    <!-- 表单内容 -->
+    <div class="form-container">
+        <div class="form-group">
+            <label class="form-label" for="dish-name">菜品名称</label>
+            <input type="text" id="dish-name" class="form-input" placeholder="请输入菜品名称">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="dish-description">菜品描述</label>
+            <textarea id="dish-description" class="form-textarea" placeholder="请输入菜品描述"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">菜品图片</label>
+            <div class="image-upload" id="image-upload">
+                <i class="fas fa-camera image-upload-icon"></i>
+                <div class="image-upload-text">点击上传菜品图片</div>
+                <img src="" alt="预览图" class="image-preview" id="image-preview">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="dish-price">菜品价格</label>
+            <div class="price-input">
+                <input type="number" id="dish-price" class="form-input" placeholder="请输入菜品价格">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="dish-category">菜品分类</label>
+            <select id="dish-category" class="form-select">
+                <option value="">请选择菜品分类</option>
+                <option value="main">主菜</option>
+                <option value="side">配菜</option>
+                <option value="soup">汤类</option>
+                <option value="dessert">甜点</option>
+                <option value="drink">饮品</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">菜品标签</label>
+            <div class="tags-container">
+                <div class="tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-fire"></i>
+                    <span>辣</span>
+                </div>
+                <div class="tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-leaf"></i>
+                    <span>素食</span>
+                </div>
+                <div class="tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-star"></i>
+                    <span>招牌</span>
+                </div>
+                <div class="tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-heart"></i>
+                    <span>健康</span>
+                </div>
+                <div class="tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-clock"></i>
+                    <span>快手</span>
+                </div>
+                <div class="tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-plus"></i>
+                    <span>自定义</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="dish-notes">备注</label>
+            <textarea id="dish-notes" class="form-textarea" placeholder="可选，添加一些备注信息"></textarea>
+        </div>
+        
+        <button class="ios-button w-full mt-16" onclick="navigateTo('restaurant-detail.html')">添加菜品</button>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // 图片上传预览
+        document.getElementById('image-upload').addEventListener('click', function() {
+            // 在实际应用中，这里会触发文件选择
+            // 在原型中，我们直接显示一个预设的图片
+            const preview = document.getElementById('image-preview');
+            preview.src = 'https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+            preview.classList.add('show');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .home-header {
+            padding: 20px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-greeting {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background-color: var(--white);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            background-color: var(--danger);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .search-bar {
+            margin: 0 16px 20px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--white);
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dark-gray);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 20px 16px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title .view-all {
+            font-size: 14px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .restaurant-list {
+            padding: 0 16px;
+        }
+        
+        .create-restaurant-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            height: 150px;
+        }
+        
+        .create-restaurant-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .create-restaurant-text {
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .quick-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 16px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-action {
+            width: calc(25% - 10px);
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .quick-action-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+        
+        .quick-action-text {
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--dark-gray);
+        }
+        
+        .empty-state-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: var(--medium-gray);
+        }
+        
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar">
+        <div class="time">14:30</div>
+        <div class="icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 首页内容 -->
+    <div class="main-content">
+        <!-- 头部 -->
+        <div class="home-header">
+            <div class="user-greeting">你好，小厨师</div>
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
+                <div class="notification-badge">2</div>
+            </div>
+        </div>
+        
+        <!-- 搜索栏 -->
+        <div class="search-bar">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="搜索餐厅或菜品">
+        </div>
+        
+        <!-- 快捷操作 -->
+        <div class="quick-actions">
+            <div class="quick-action" onclick="navigateTo('create-restaurant.html')">
+                <div class="quick-action-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="quick-action-text">创建餐厅</div>
+            </div>
+            <div class="quick-action" onclick="navigateTo('order.html')">
+                <div class="quick-action-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="quick-action-text">开始点餐</div>
+            </div>
+            <div class="quick-action" onclick="navigateTo('menu-management.html')">
+                <div class="quick-action-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="quick-action-text">菜单管理</div>
+            </div>
+            <div class="quick-action" onclick="navigateTo('order-detail.html')">
+                <div class="quick-action-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div class="quick-action-text">历史订单</div>
+            </div>
+        </div>
+        
+        <!-- 我的餐厅 -->
+        <div class="section-title">
+            <span>我的餐厅</span>
+            <a href="#" class="view-all">查看全部</a>
+        </div>
+        
+        <div class="restaurant-list">
+            <!-- 创建餐厅卡片 -->
+            <div class="create-restaurant-card" onclick="navigateTo('create-restaurant.html')">
+                <div class="create-restaurant-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="create-restaurant-text">创建新餐厅</div>
+            </div>
+            
+            <!-- 餐厅卡片 -->
+            <div class="restaurant-card" onclick="navigateTo('restaurant-detail.html')">
+                <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="家的味道">
+                <div class="content">
+                    <div class="title">家的味道</div>
+                    <div class="description">家庭聚餐的理想选择</div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">12 个菜品</span>
+                        <span class="badge">热门</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="restaurant-card" onclick="navigateTo('restaurant-detail.html')">
+                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="朋友聚会">
+                <div class="content">
+                    <div class="title">朋友聚会</div>
+                    <div class="description">与朋友共享美食时光</div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">8 个菜品</span>
+                        <span class="badge secondary">新建</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 最近点餐 -->
+        <div class="section-title">
+            <span>最近点餐</span>
+            <a href="#" class="view-all">查看全部</a>
+        </div>
+        
+        <div class="restaurant-list">
+            <!-- 如果没有最近点餐，显示空状态 -->
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="empty-state-text">暂无最近点餐记录</div>
+                <button class="ios-button" onclick="navigateTo('order.html')">开始点餐</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- iOS 底部导航栏 -->
+    <div class="ios-tab-bar">
+        <div class="tab-item active" data-page="home.html" onclick="navigateTo('home.html')">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" data-page="menu-management.html" onclick="navigateTo('menu-management.html')">
+            <i class="fas fa-utensils"></i>
+            <span>菜单</span>
+        </div>
+        <div class="tab-item" data-page="order.html" onclick="navigateTo('order.html')">
+            <i class="fas fa-shopping-cart"></i>
+            <span>点餐</span>
+        </div>
+        <div class="tab-item" data-page="profile.html" onclick="navigateTo('profile.html')">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html> 

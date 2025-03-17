@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单详情 - 家庭餐厅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .page-header {
+            padding: 15px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--medium-gray);
+            background-color: var(--white);
+        }
+        
+        .back-button {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 16px;
+        }
+        
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .share-button {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--primary-color);
+        }
+        
+        .order-status {
+            background-color: var(--white);
+            padding: 20px 16px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .status-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            margin: 0 auto 15px;
+        }
+        
+        .status-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .status-description {
+            color: var(--dark-gray);
+            margin-bottom: 15px;
+        }
+        
+        .status-progress {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .status-progress::before {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 30px;
+            right: 30px;
+            height: 2px;
+            background-color: var(--medium-gray);
+            z-index: 1;
+        }
+        
+        .status-progress::after {
+            content: "";
+            position: absolute;
+            top: 15px;
+            left: 30px;
+            width: 70%;
+            height: 2px;
+            background-color: var(--primary-color);
+            z-index: 2;
+        }
+        
+        .progress-step {
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            background-color: var(--white);
+            border: 2px solid var(--medium-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 3;
+        }
+        
+        .progress-step.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .progress-step.completed {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 16px 10px;
+        }
+        
+        .order-info {
+            background-color: var(--white);
+            padding: 15px 16px;
+            margin-bottom: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: var(--dark-gray);
+        }
+        
+        .info-value {
+            font-weight: 500;
+            text-align: right;
+        }
+        
+        .order-items {
+            background-color: var(--white);
+            padding: 15px 16px;
+            margin-bottom: 10px;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .order-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .item-quantity {
+            font-size: 14px;
+            color: var(--dark-gray);
+        }
+        
+        .item-price {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .order-summary {
+            background-color: var(--white);
+            padding: 15px 16px;
+            margin-bottom: 10px;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .summary-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .summary-label {
+            color: var(--dark-gray);
+        }
+        
+        .summary-value {
+            font-weight: 500;
+        }
+        
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--light-gray);
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .summary-total-label {
+            color: var(--text-color);
+        }
+        
+        .summary-total-value {
+            color: var(--primary-color);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            padding: 0 16px;
+            margin-bottom: 20px;
+        }
+        
+        .action-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .action-button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .action-button.secondary {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- iOS 状态栏 -->
+    <div class="ios-status-bar">
+        <div class="time">14:30</div>
+        <div class="icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="back-button" onclick="navigateTo('home.html')">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        <div class="page-title">订单详情</div>
+        <div class="share-button" onclick="showToast('分享功能即将上线')">
+            <i class="fas fa-share-alt"></i>
+        </div>
+    </div>
+
+    <!-- 订单状态 -->
+    <div class="order-status">
+        <div class="status-icon">
+            <i class="fas fa-utensils"></i>
+        </div>
+        <div class="status-title">准备中</div>
+        <div class="status-description">预计 18:30 开始用餐</div>
+        
+        <div class="status-progress">
+            <div class="progress-step completed">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="progress-step active">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="progress-step">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <div class="progress-step">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 订单信息 -->
+    <div class="section-title">订单信息</div>
+    <div class="order-info">
+        <div class="info-row">
+            <div class="info-label">订单编号</div>
+            <div class="info-value">2025031712345</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">下单时间</div>
+            <div class="info-value">2025-03-17 14:30</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">用餐时间</div>
+            <div class="info-value">2025-03-17 18:30</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">用餐地点</div>
+            <div class="info-value">家里</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">用餐人数</div>
+            <div class="info-value">4人</div>
+        </div>
+    </div>
+
+    <!-- 订单项目 -->
+    <div class="section-title">订单项目</div>
+    <div class="order-items">
+        <div class="order-item">
+            <div class="item-info">
+                <div class="item-name">红烧肉</div>
+                <div class="item-quantity">x1</div>
+            </div>
+            <div class="item-price">¥38</div>
+        </div>
+        
+        <div class="order-item">
+            <div class="item-info">
+                <div class="item-name">清蒸鱼</div>
+                <div class="item-quantity">x1</div>
+            </div>
+            <div class="item-price">¥48</div>
+        </div>
+        
+        <div class="order-item">
+            <div class="item-info">
+                <div class="item-name">番茄炒蛋</div>
+                <div class="item-quantity">x1</div>
+            </div>
+            <div class="item-price">¥18</div>
+        </div>
+        
+        <div class="order-item">
+            <div class="item-info">
+                <div class="item-name">宫保鸡丁</div>
+                <div class="item-quantity">x1</div>
+            </div>
+            <div class="item-price">¥32</div>
+        </div>
+    </div>
+
+    <!-- 订单摘要 -->
+    <div class="section-title">订单摘要</div>
+    <div class="order-summary">
+        <div class="summary-row">
+            <div class="summary-label">商品金额</div>
+            <div class="summary-value">¥136</div>
+        </div>
+        
+        <div class="summary-row">
+            <div class="summary-label">食材准备费</div>
+            <div class="summary-value">¥0</div>
+        </div>
+        
+        <div class="summary-row">
+            <div class="summary-label">配送费</div>
+            <div class="summary-value">¥0</div>
+        </div>
+        
+        <div class="summary-total">
+            <div class="summary-total-label">合计</div>
+            <div class="summary-total-value">¥136</div>
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="action-buttons">
+        <div class="action-button secondary" onclick="showToast('取消订单功能即将上线')">
+            取消订单
+        </div>
+        <div class="action-button primary" onclick="navigateTo('order.html')">
+            再次点餐
+        </div>
+    </div>
+
+    <!-- iOS 底部导航栏 -->
+    <div class="ios-tab-bar">
+        <div class="tab-item" data-page="home.html" onclick="navigateTo('home.html')">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" data-page="menu-management.html" onclick="navigateTo('menu-management.html')">
+            <i class="fas fa-utensils"></i>
+            <span>菜单</span>
+        </div>
+        <div class="tab-item" data-page="order.html" onclick="navigateTo('order.html')">
+            <i class="fas fa-shopping-cart"></i>
+            <span>点餐</span>
+        </div>
+        <div class="tab-item" data-page="profile.html" onclick="navigateTo('profile.html')">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html> 
