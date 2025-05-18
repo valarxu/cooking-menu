@@ -1,0 +1,52 @@
+.mine-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 0;
+}
+.user-card {
+  width: 90vw;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 0 20rpx 0;
+  margin-bottom: 40rpx;
+}
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  margin-bottom: 20rpx;
+}
+.nickname {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+.userid {
+  color: #888;
+  font-size: 24rpx;
+  margin-bottom: 16rpx;
+}
+.user-stats {
+  display: flex;
+  justify-content: space-between;
+  width: 70vw;
+  margin-top: 16rpx;
+  color: #333;
+  font-size: 28rpx;
+}
+.mine-menu {
+  width: 90vw;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-around;
+  padding: 30rpx 0;
+  font-size: 30rpx;
+  color: #666;
+} 

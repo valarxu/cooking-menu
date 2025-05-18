@@ -1,0 +1,18 @@
+<view class="video-create-container">
+  <textarea class="text-input" placeholder="请输入内容" bindinput="onTextInput"></textarea>
+  <button class="ai-btn">AI生成</button>
+  <picker mode="selector" range="['自动匹配']" bindchange="onBgmChange">
+    <view class="picker">BGM 选择：{{bgm}}</view>
+  </picker>
+  <button class="opt-btn">一键优化</button>
+  <picker mode="selector" range="['A']" bindchange="onVoiceChange">
+    <view class="picker">口播音色：{{voice}}</view>
+  </picker>
+  <button class="upload-btn" bindtap="onUploadMaterial">上传配音</button>
+  <view class="upload-area">
+    <text>请上传视频素材</text>
+    <button class="upload-btn">+</button>
+  </view>
+  <button class="auto-tune-btn">素材封面自动调调</button>
+  <button class="gen-video-btn">生成视频</button>
+</view> 

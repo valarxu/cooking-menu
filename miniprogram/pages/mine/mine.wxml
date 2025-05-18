@@ -1,0 +1,17 @@
+<view class="mine-container">
+  <view class="user-card">
+    <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+    <view class="nickname">{{userInfo.nickName}}</view>
+    <view class="userid">{{userInfo.id}}</view>
+    <view class="user-stats">
+      <view>作品 {{userInfo.works}}</view>
+      <view>粉丝 {{userInfo.fans}}</view>
+      <view>获赞 {{userInfo.likes}}</view>
+    </view>
+  </view>
+  <view class="mine-menu">
+    <view>会员</view>
+    <view>积分</view>
+    <view>账号绑定</view>
+  </view>
+</view> 

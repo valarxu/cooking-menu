@@ -1,0 +1,9 @@
+<view class="text-extract-container">
+  <textarea class="video-input" placeholder="请输入视频链接" bindinput="onVideoInput"></textarea>
+  <button class="extract-btn" bindtap="onExtract">提交</button>
+  <view class="result-area">
+    <textarea class="result-text" value="{{extractedText}}" placeholder="这里显示文案结果"></textarea>
+    <button class="copy-btn">复制文案</button>
+    <button class="opt-btn">改写文案</button>
+  </view>
+</view> 

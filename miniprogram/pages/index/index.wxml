@@ -1,4 +1,77 @@
 <view class="container">
-  <view class="title">{{title}}</view>
-  <view class="content">{{content}}</view>
+  <!-- 顶部 Banner -->
+  <view class="banner">
+    <image class="banner-image" src="/images/banner.png" mode="widthFix"></image>
+  </view>
+
+  <!-- 功能入口卡片 -->
+  <view class="function-cards">
+    <view class="card large-card">
+      <!-- 我的数字人 -->
+      <image class="card-bg" src="/images/digital_human_bg.png" mode="aspectFill"></image>
+      <view class="card-content">
+        <text class="card-text">我的数字人</text>
+      </view>
+    </view>
+    <view class="right-cards">
+      <view class="card small-card voice-clone">
+        <!-- 声音克隆 -->
+        <image class="card-bg" src="/images/voice_clone_bg.png" mode="aspectFill"></image>
+        <view class="card-content">
+          <text class="card-text">声音克隆</text>
+        </view>
+      </view>
+      <view class="card small-card material-lib">
+        <!-- 我的素材库 -->
+        <image class="card-bg" src="/images/material_bg.png" mode="aspectFill"></image>
+        <view class="card-content">
+          <text class="card-text">我的素材库</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="function-cards">
+    <view class="left-cards">
+      <view class="card-middle small-card voice-clone">
+        <!-- 文案提取 -->
+        <image class="card-bg" src="/images/text_extract_bg.png" mode="aspectFill"></image>
+        <view class="card-title">
+          <text class="card-text">文案提取</text>
+          <text class="card-desc">提取视频中的文案</text>
+        </view>
+      </view>
+      <view class="card-middle small-card material-lib">
+        <!-- 文案仿写 -->
+        <image class="card-bg" src="/images/text_rewrite_bg.png" mode="aspectFill"></image>
+        <view class="card-title">
+          <text class="card-text">文案仿写</text>
+          <text class="card-desc">根据视频链接或者文案内容进行仿写</text>
+        </view>
+      </view>
+    </view>
+    <view class="card-middle large-card">
+      <!-- AI视频创作 -->
+      <image class="card-bg" src="/images/video_create_bg.png" mode="aspectFill"></image>
+      <view class="card-title">
+        <text class="card-text">AI视频创作</text>
+        <text class="card-desc">根据视频链接视频文案智能剪辑视频成片</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-card">
+    <view class="card-middle full-width-card">
+      <!-- 爆款短视频文案创作 -->
+      <image class="card-bg" src="/images/video_text_bg.png" mode="aspectFill"></image>
+      <view class="card-bottom-title">
+        <text class="card-text">爆款短视频文案创作</text>
+        <text class="card-desc">根据用户需求，创作短视频文案脚本</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部导航栏占位 (实际TabBar在app.json中配置) -->
+  <view class="tabbar-placeholder"></view>
+
 </view>

@@ -2,154 +2,282 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 50rpx;
-  height: 100vh;
+  padding: 0 32rpx;
+  background-color: #f8f8f8;
+  padding-bottom: env(safe-area-inset-bottom);
+  /* 适配底部安全区域 */
 }
 
-.title {
+.banner {
+  position: relative;
+  width: 100%;
+  margin-bottom: 32rpx;
+  /* 调整间距 */
+}
+
+.banner-image {
+  width: 100%;
+  border-radius: 16rpx;
+}
+
+.banner-text {
+  position: absolute;
+  top: 30rpx;
+  left: 30rpx;
+  color: #fff;
+  z-index: 2;
+}
+
+.banner-title {
   font-size: 40rpx;
   font-weight: bold;
-  margin-bottom: 30rpx;
+  display: block;
 }
 
-.content {
-  font-size: 32rpx;
-  color: #666;
+.banner-subtitle {
+  font-size: 28rpx;
+  display: block;
+  margin-top: 8rpx;
 }
 
-.sub-title {
-  color: #1aad19;
-  font-size: 20px;
-  font-weight: 600;
-  text-align: center;
-  line-height: 30px;
-}
-
-.btn-box {
-  display: flex;
-  justify-content: center;
-  gap: 30rpx;
-  padding: 30px 0px;
-}
-
-.btn-fill {
-  width: 180rpx;
-  height: 40px;
-  border-radius: 4px;
-  line-height: 40px;
-  color: #fff;
-  background-color: #1aad19;
-  text-align: center;
-}
-
-.btn-light {
-  width: 180rpx;
-  height: 40px;
-  border-radius: 4px;
-  line-height: 40px;
-  color: #1aad19;
-  background-color: #FFF;
-  border: #1aad19 solid 1px;
-  text-align: center;
-}
-
-.introduction-box {
-  margin: 0px auto;
-  border: rgb(238, 238, 238) solid 1px;
-  width: 500rpx;
-  padding: 30px;
-  margin-bottom: 25px;
-}
-
-.introduction-title {
-  text-align: center;
-  font-size: 16px;
-  font-weight: 500;
-  padding-bottom: 20px;
-}
-
-.introduction-desc {
-  font-size: 14px;
-  color: rgb(153, 153, 153);
-  line-height: 24px;
-  text-align: justify;
-}
-
-.title-h1 {
-  font-size: 16px;
-  font-weight: 500;
-  padding-left: 16px;
-  margin: 40px 0px 0px 0px
-}
-
-.title-h4 {
-  font-size: 12px;
-  font-weight: 300;
-  padding-left: 16px;
-  margin-top: 4px;
-  opacity: 0.7;
-}
-
-.function-box {
-  margin: 16px;
-  border: #eee solid 1px;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.function-box-title {
+.function-cards {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 18px;
-  font-weight: 500;
+  width: 100%;
+  margin-bottom: 32rpx;
+  /* 调整间距 */
+  gap: 20rpx;
 }
 
-.step-title {
-  line-height: 37px;
-  font-size: 16px;
-}
-.step-text{
-  font-size: 14px;
-  line-height: 24px;
-  padding: 10px 0px;
-  text-align: justify;
-}
-.model{
-  font-size: 16px;
-  line-height: 40px;
-}
-.step-left {
-  color: #FFF;
-  background-color: #1aad19;
-  border: #1aad19 solid 1px;
-  padding: 0px 6px;
-}
-
-.step-right {
-  color: #1aad19;
-  background-color: #FFF;
-  border: #1aad19 solid 1px;
-  padding: 0px 6px;
-  margin-right: 10px;
-}
-
-.code_zone {
-  background-color: #0E190E;
-  color: rgba(255, 255, 255, 0.7);
-  border-radius: 12rpx;
-  padding: 16rpx 32rpx;
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+.card {
   position: relative;
-  margin-bottom: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 
-.btn-full {
-  height: 40px;
-  border-radius: 4px;
-  line-height: 40px;
+.card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.card-content {
   color: #fff;
-  background-color: #1aad19;
-  text-align: center;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.large-card {
+  width: 50%;
+  height: 420rpx;
+}
+
+.right-cards {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 50%;
+  gap: 20rpx;
+}
+
+.small-card {
+  width: 100%;
+  height: 200rpx;
+}
+
+/* 为特定卡片内容设置颜色和对齐 */
+.large-card .card-content {
+  align-items: flex-start;
+  /* 左对齐 */
+  top: 35%;
+  padding: 4px 24px 6px;
+  border-radius: 4px;
+  background: #4415ff;
+}
+
+.small-card .card-content {
+  color: #fff;
+  /* 右侧小卡片文字颜色 */
+  top: 30%;
+  font-weight: bold;
+}
+
+.card-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.large-card .card-icon {
+  width: 120rpx;
+  /* 数字人图标大一些 */
+  height: 120rpx;
+}
+
+.card-desc {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.card-text {
+  font-size: 36rpx;
+  /* 数字人文字大一些 */
+  font-weight: bold;
+}
+
+.product-management {
+  width: 100%;
+  margin-bottom: 40rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 24rpx;
+  padding-left: 16rpx;
+}
+
+.product-items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  /* 允许换行 */
+  justify-content: space-between;
+  /* 项目之间有空间 */
+  gap: 20rpx;
+  /* 项目之间的间隙 */
+}
+
+.product-grid-item {
+  position: relative;
+  width: calc(50% - 10rpx);
+  /* 计算宽度以实现两列布局，减去gap的一半 */
+  background-color: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  padding: 30rpx;
+  display: flex;
+  /* 使内容和箭头左右布局 */
+  justify-content: space-between;
+  align-items: center;
+}
+
+.full-width-item {
+  width: 100%;
+  /* 全宽项目 */
+}
+
+.item-bg {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 200rpx;
+  /* 根据实际图片调整大小 */
+  height: 200rpx;
+  /* 根据实际图片调整大小 */
+  z-index: 1;
+  opacity: 0.8;
+}
+
+.item-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  /* 标题颜色 */
+  margin-bottom: 4rpx;
+}
+
+.item-desc {
+  font-size: 24rpx;
+  color: #888;
+}
+
+.item-arrow {
+  font-size: 36rpx;
+  color: #bbb;
+  z-index: 2;
+  margin-left: 20rpx;
+}
+
+.left-cards {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 50%;
+  gap: 20rpx;
+}
+
+.bottom-card {
+  width: 100%;
+  margin-top: 16rpx;
+}
+
+.full-width-card {
+  width: 100%;
+  height: 200rpx;
+}
+
+.full-width-card .card-content {
+  align-items: flex-start;
+  top: 35%;
+  padding: 4px 24px 6px;
+  border-radius: 4px;
+  background: #4415ff;
+}
+
+.full-width-card .card-text {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.card-middle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.card-title {
+  color: #333;
+  position: relative;
+  width: 90%;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.card-bottom-title {
+  color: #333;
+  position: relative;
+  width: 94%;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
 }

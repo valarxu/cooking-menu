@@ -1,6 +1,10 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/videoCreate/videoCreate",
+    "pages/textExtract/textExtract",
+    "pages/mine/mine",
+    "pages/aiAssistant/aiAssistant"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",
@@ -9,6 +13,36 @@
     "backgroundColor": "#eeeeee",
     "backgroundTextStyle": "light",
     "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "color": "#8a8a8a",
+    "selectedColor": "#6145FF",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "/images/tabbar/home.png",
+        "selectedIconPath": "/images/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/videoCreate/videoCreate",
+        "text": "视频创作",
+        "iconPath": "/images/tabbar/video.png",
+        "selectedIconPath": "/images/tabbar/video-active.png"
+      },
+      {
+        "pagePath": "pages/aiAssistant/aiAssistant",
+        "text": "AI助手",
+        "iconPath": "/images/tabbar/ai.png",
+        "selectedIconPath": "/images/tabbar/ai-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "/images/tabbar/mine.png",
+        "selectedIconPath": "/images/tabbar/mine-active.png"
+      }
+    ]
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2",
