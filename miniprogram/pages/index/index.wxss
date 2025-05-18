@@ -11,7 +11,7 @@
 .banner {
   position: relative;
   width: 100%;
-  margin-bottom: 32rpx;
+  margin-bottom: 0rpx;
   /* 调整间距 */
 }
 
@@ -44,9 +44,10 @@
   display: flex;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
   /* 调整间距 */
   gap: 20rpx;
+  margin-top: 24rpx;
 }
 
 .card {
@@ -56,8 +57,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .card-bg {
@@ -158,65 +160,6 @@
   /* 项目之间的间隙 */
 }
 
-.product-grid-item {
-  position: relative;
-  width: calc(50% - 10rpx);
-  /* 计算宽度以实现两列布局，减去gap的一半 */
-  background-color: #fff;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  padding: 30rpx;
-  display: flex;
-  /* 使内容和箭头左右布局 */
-  justify-content: space-between;
-  align-items: center;
-}
-
-.full-width-item {
-  width: 100%;
-  /* 全宽项目 */
-}
-
-.item-bg {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 200rpx;
-  /* 根据实际图片调整大小 */
-  height: 200rpx;
-  /* 根据实际图片调整大小 */
-  z-index: 1;
-  opacity: 0.8;
-}
-
-.item-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-}
-
-.item-title {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-  /* 标题颜色 */
-  margin-bottom: 4rpx;
-}
-
-.item-desc {
-  font-size: 24rpx;
-  color: #888;
-}
-
-.item-arrow {
-  font-size: 36rpx;
-  color: #bbb;
-  z-index: 2;
-  margin-left: 20rpx;
-}
-
 .left-cards {
   display: flex;
   flex-direction: column;
@@ -254,8 +197,9 @@
   flex-direction: column;
   align-items: center;
   border-radius: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .card-title {

@@ -30,6 +30,15 @@
       </view>
     </view>
   </view>
+  <view class="bottom-card">
+    <view class="card-middle full-width-card">
+      <!-- 产品管理 -->
+      <image class="card-bg" src="/images/product_manage.png" mode="aspectFill"></image>
+      <view class="card-bottom-title">
+        <text class="card-text">产品管理</text>
+      </view>
+    </view>
+  </view>
 
   <view class="function-cards">
     <view class="left-cards">
