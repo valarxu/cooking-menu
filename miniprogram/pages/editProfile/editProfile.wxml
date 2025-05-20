@@ -1,0 +1,29 @@
+<view class="edit-profile-container">
+  <view class="profile-section">
+    <view class="section-title">头像</view>
+    <view class="avatar-section">
+      <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">更换头像</button>
+    </view>
+  </view>
+
+  <view class="profile-section">
+    <view class="section-title">昵称</view>
+    <input class="nickname-input" type="nickname" placeholder="请输入昵称" value="{{userInfo.nickName}}" bindinput="onInputNickname"/>
+  </view>
+
+  <view class="profile-section">
+    <view class="section-title">手机号</view>
+    <view class="phone-section">
+      <text class="phone-number" wx:if="{{isPhoneNumberSet}}">{{phoneNumber}}</text>
+      <text class="phone-number" wx:else>未设置</text>
+      <button class="phone-btn" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">
+        {{isPhoneNumberSet ? '更换手机号' : '获取手机号'}}
+      </button>
+    </view>
+  </view>
+
+  <view class="button-section">
+    <button class="save-btn" bindtap="saveUserInfo">保存</button>
+  </view>
+</view> 

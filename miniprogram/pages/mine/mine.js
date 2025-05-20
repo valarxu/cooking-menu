@@ -6,9 +6,6 @@ Page({
     hasUserInfo: false,
     isLoginProcess: false, // 是否正在登录流程中
     tempUserInfo: {}, // 临时存储用户信息
-    works: 1024,
-    fans: 5600,
-    likes: 6888
   },
   
   onLoad() {
@@ -84,91 +81,127 @@ Page({
   
   // 开始登录流程
   getLoginInfo() {
-    wx.showLoading({
-      title: '登录中...',
-    });
+    // 直接调用getUserProfile
+    wx.getUserProfile({
+      desc: '用于完善用户资料',
+      success: (userResult) => {
+        console.log('获取用户信息成功:', userResult);
+        
+        wx.showLoading({
+          title: '登录中...',
+        });
 
-    // 1. 先获取微信登录凭证
-    wx.login({
-      success: (res) => {
-        if (res.code) {
-          console.log('微信登录成功，code:', res.code);
-          
-          // 2. 将 code 发送到后端
-          wx.request({
-            url: 'https://your-api-domain.com/api/login', // 替换为实际的后端API地址
-            method: 'POST',
-            data: {
-              code: res.code
-            },
-            success: (response) => {
-              // 3. 后端返回 Token
-              if (response.statusCode === 200 && response.data.token) {
-                console.log('获取Token成功:', response.data);
-                
-                // 4. 存储 Token
-                wx.setStorage({
-                  key: 'token',
-                  data: response.data.token,
-                  success: () => {
-                    console.log('Token已保存到本地存储');
-                    
-                    // 设置请求头的全局配置，后续请求自动带上Token
-                    wx.setStorageSync('token', response.data.token);
-                    
-                    // 5. 进入获取用户信息流程
-                    this.setData({
-                      isLoginProcess: true,
-                      tempUserInfo: {
-                        avatarUrl: '/images/tabbar/mine.png',
-                        nickName: ''
+        // 1. 获取微信登录凭证
+        wx.login({
+          success: (res) => {
+            if (res.code) {
+              console.log('微信登录成功，code:', res.code);
+              
+              // 2. 调用云函数进行登录
+              wx.cloud.callFunction({
+                name: 'login',
+                data: {
+                  code: res.code
+                },
+                success: (result) => {
+                  console.log('云函数调用成功:', result);
+                  
+                  if (result.result && result.result.success) {
+                    // 3. 存储token
+                    wx.setStorage({
+                      key: 'token',
+                      data: result.result.token,
+                      success: () => {
+                        console.log('Token已保存到本地存储');
+                        
+                        // 4. 处理用户信息
+                        if (result.result.userInfo) {
+                          // 如果数据库中有用户信息，使用数据库中的信息
+                          const dbUserInfo = result.result.userInfo;
+                          app.globalData.userInfo = dbUserInfo;
+                          app.globalData.isLogin = true;
+                          this.setData({
+                            userInfo: dbUserInfo,
+                            hasUserInfo: true
+                          });
+                          
+                          // 保存到本地存储
+                          wx.setStorage({
+                            key: 'userInfo',
+                            data: dbUserInfo
+                          });
+                        } else {
+                          // 如果数据库中没有用户信息，使用微信返回的信息
+                          app.globalData.userInfo = userResult.userInfo;
+                          app.globalData.isLogin = true;
+                          this.setData({
+                            userInfo: userResult.userInfo,
+                            hasUserInfo: true
+                          });
+                          
+                          // 保存到本地存储
+                          wx.setStorage({
+                            key: 'userInfo',
+                            data: userResult.userInfo
+                          });
+                        }
+                        
+                        wx.hideLoading();
+                        wx.showToast({
+                          title: '登录成功',
+                          icon: 'success'
+                        });
+                      },
+                      fail: (err) => {
+                        console.error('保存Token失败:', err);
+                        wx.hideLoading();
+                        wx.showToast({
+                          title: '登录失败',
+                          icon: 'none'
+                        });
                       }
-                    }, () => {
-                      wx.hideLoading();
-                      console.log('已进入用户信息获取流程');
                     });
-                  },
-                  fail: (err) => {
-                    console.error('保存Token失败:', err);
+                  } else {
+                    console.error('登录失败:', result);
                     wx.hideLoading();
                     wx.showToast({
                       title: '登录失败',
                       icon: 'none'
                     });
                   }
-                });
-              } else {
-                console.error('获取Token失败:', response);
-                wx.hideLoading();
-                wx.showToast({
-                  title: response.data.message || '登录失败',
-                  icon: 'none'
-                });
-              }
-            },
-            fail: (err) => {
-              console.error('请求后端失败:', err);
+                },
+                fail: (err) => {
+                  console.error('云函数调用失败:', err);
+                  wx.hideLoading();
+                  wx.showToast({
+                    title: '网络错误，请稍后重试',
+                    icon: 'none'
+                  });
+                }
+              });
+            } else {
+              console.error('微信登录失败', res);
               wx.hideLoading();
               wx.showToast({
-                title: '网络错误，请稍后重试',
+                title: '登录失败',
                 icon: 'none'
               });
             }
-          });
-        } else {
-          console.error('微信登录失败', res);
-          wx.hideLoading();
-          wx.showToast({
-            title: '登录失败',
-            icon: 'none'
-          });
-        }
+          },
+          fail: (err) => {
+            console.error('微信登录失败', err);
+            wx.hideLoading();
+            wx.showToast({
+              title: '登录失败',
+              icon: 'none'
+            });
+          }
+        });
       },
       fail: (err) => {
-        console.error('微信登录失败', err);
-        wx.hideLoading();
+        console.error('获取用户信息失败:', err);
         wx.showToast({
-          title: '登录失败',
+          title: '获取用户信息失败',
           icon: 'none'
         });
       }
@@ -303,9 +336,6 @@ Page({
             country: userInfo.country,
             province: userInfo.province,
             city: userInfo.city,
-            works: 0,
-            fans: 0,
-            likes: 0,
             createTime: db.serverDate(),
             updateTime: db.serverDate()
           }
@@ -340,6 +370,13 @@ Page({
             }
           });
           
+          wx.removeStorage({
+            key: 'token',
+            success: () => {
+              console.log('本地存储的token已清除');
+            }
+          });
+          
           // 重置页面状态
           this.setData({
             userInfo: null,
@@ -356,5 +393,12 @@ Page({
         }
       }
     });
+  },
+
+  // 跳转到编辑资料页面
+  goToEditProfile() {
+    wx.navigateTo({
+      url: '/pages/editProfile/editProfile'
+    })
   }
 }) 

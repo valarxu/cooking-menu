@@ -8,26 +8,6 @@
     </view>
   </view>
   
-  <!-- 登录中状态 - 获取头像和昵称 -->
-  <view class="user-card" wx:elif="{{isLoginProcess}}">
-    <view class="auth-title">请授权获取头像和昵称</view>
-    
-    <!-- 头像选择器 -->
-    <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-      <image class="avatar" src="{{tempUserInfo.avatarUrl || '/images/tabbar/mine.png'}}" mode="aspectFill"></image>
-    </button>
-    <view class="avatar-tip">点击上方修改头像</view>
-    
-    <!-- 昵称输入框 -->
-    <view class="nickname-container">
-      <view class="nickname-label">昵称</view>
-      <input type="nickname" class="nickname-input" placeholder="请输入昵称" bindinput="onInputNickname" bindblur="onNicknameBlur" value="{{tempUserInfo.nickName}}"/>
-    </view>
-    
-    <!-- 确认按钮 -->
-    <button class="confirm-btn" bindtap="confirmUserInfo">确认</button>
-  </view>
-  
   <!-- 已登录状态 -->
   <view class="user-card" wx:else>
     <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
@@ -37,12 +17,9 @@
       <view>粉丝 {{fans}}</view>
       <view>获赞 {{likes}}</view>
     </view>
-    <button class="logout-btn" bindtap="logout">退出登录</button>
-  </view>
-  
-  <view class="mine-menu">
-    <view>会员</view>
-    <view>积分</view>
-    <view>账号绑定</view>
+    <view class="button-group">
+      <button class="edit-btn" bindtap="goToEditProfile">编辑资料</button>
+      <button class="logout-btn" bindtap="logout">退出登录</button>
+    </view>
   </view>
 </view> 

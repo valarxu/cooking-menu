@@ -4,7 +4,8 @@
     "pages/videoCreate/videoCreate",
     "pages/textExtract/textExtract",
     "pages/mine/mine",
-    "pages/aiAssistant/aiAssistant"
+    "pages/aiAssistant/aiAssistant",
+    "pages/editProfile/editProfile"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",
