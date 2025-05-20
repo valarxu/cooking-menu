@@ -1,14 +1,45 @@
 <view class="mine-container">
-  <view class="user-card">
-    <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
-    <view class="nickname">{{userInfo.nickName}}</view>
-    <view class="userid">{{userInfo.id}}</view>
-    <view class="user-stats">
-      <view>作品 {{userInfo.works}}</view>
-      <view>粉丝 {{userInfo.fans}}</view>
-      <view>获赞 {{userInfo.likes}}</view>
+  <!-- 未登录状态 -->
+  <view class="user-card" wx:if="{{!hasUserInfo}}">
+    <image class="avatar" src="/images/tabbar/mine.png" mode="aspectFill"></image>
+    <view class="nickname">未登录</view>
+    <view class="login-btn-container">
+      <button class="login-btn" bindtap="getLoginInfo">微信登录</button>
     </view>
   </view>
+  
+  <!-- 登录中状态 - 获取头像和昵称 -->
+  <view class="user-card" wx:elif="{{isLoginProcess}}">
+    <view class="auth-title">请授权获取头像和昵称</view>
+    
+    <!-- 头像选择器 -->
+    <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+      <image class="avatar" src="{{tempUserInfo.avatarUrl || '/images/tabbar/mine.png'}}" mode="aspectFill"></image>
+    </button>
+    <view class="avatar-tip">点击上方修改头像</view>
+    
+    <!-- 昵称输入框 -->
+    <view class="nickname-container">
+      <view class="nickname-label">昵称</view>
+      <input type="nickname" class="nickname-input" placeholder="请输入昵称" bindinput="onInputNickname" bindblur="onNicknameBlur" value="{{tempUserInfo.nickName}}"/>
+    </view>
+    
+    <!-- 确认按钮 -->
+    <button class="confirm-btn" bindtap="confirmUserInfo">确认</button>
+  </view>
+  
+  <!-- 已登录状态 -->
+  <view class="user-card" wx:else>
+    <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+    <view class="nickname">{{userInfo.nickName || '微信用户'}}</view>
+    <view class="user-stats">
+      <view>作品 {{works}}</view>
+      <view>粉丝 {{fans}}</view>
+      <view>获赞 {{likes}}</view>
+    </view>
+    <button class="logout-btn" bindtap="logout">退出登录</button>
+  </view>
+  
   <view class="mine-menu">
     <view>会员</view>
     <view>积分</view>
