@@ -15,11 +15,7 @@
   <view class="profile-section">
     <view class="section-title">手机号</view>
     <view class="phone-section">
-      <text class="phone-number" wx:if="{{isPhoneNumberSet}}">{{phoneNumber}}</text>
-      <text class="phone-number" wx:else>未设置</text>
-      <button class="phone-btn" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">
-        {{isPhoneNumberSet ? '更换手机号' : '获取手机号'}}
-      </button>
+      <input class="phone-input" type="number" placeholder="请输入手机号" value="{{phoneNumber}}" bindinput="onInputPhoneNumber" maxlength="11"/>
     </view>
   </view>
 

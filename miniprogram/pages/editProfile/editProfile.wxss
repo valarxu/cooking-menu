@@ -50,8 +50,17 @@
 
 .phone-section {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  padding: 20rpx 0;
+}
+
+.phone-input {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 20rpx;
+  border: 1px solid #ddd;
+  border-radius: 8rpx;
+  font-size: 28rpx;
 }
 
 .phone-number {

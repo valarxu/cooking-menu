@@ -4,7 +4,6 @@ Page({
   data: {
     userInfo: null,
     phoneNumber: '',
-    isPhoneNumberSet: false,
     originalUserInfo: null // 保存原始用户信息用于比较
   },
 
@@ -14,6 +13,7 @@ Page({
     if (userInfo) {
       this.setData({
         userInfo: userInfo,
+        phoneNumber: userInfo.phoneNumber || '',
         originalUserInfo: JSON.parse(JSON.stringify(userInfo)) // 深拷贝保存原始信息
       })
     }
@@ -35,37 +35,12 @@ Page({
     })
   },
 
-  // 处理手机号获取
-  getPhoneNumber(e) {
-    if (e.detail.errMsg === 'getPhoneNumber:ok') {
-      wx.showLoading({
-        title: '获取手机号中...'
-      })
-      
-      // 调用云函数解密手机号
-      wx.cloud.callFunction({
-        name: 'getPhoneNumber',
-        data: {
-          cloudID: e.detail.cloudID
-        },
-        success: res => {
-          wx.hideLoading()
-          const phoneNumber = res.result.phoneNumber
-          this.setData({
-            phoneNumber: phoneNumber,
-            isPhoneNumberSet: true
-          })
-        },
-        fail: err => {
-          wx.hideLoading()
-          console.error('获取手机号失败：', err)
-          wx.showToast({
-            title: '获取手机号失败',
-            icon: 'none'
-          })
-        }
-      })
-    }
+  // 处理手机号输入
+  onInputPhoneNumber(e) {
+    const phoneNumber = e.detail.value
+    this.setData({
+      phoneNumber: phoneNumber
+    })
   },
 
   // 检查信息是否有变化
@@ -75,7 +50,13 @@ Page({
     
     return userInfo.nickName !== originalUserInfo.nickName ||
            userInfo.avatarUrl !== originalUserInfo.avatarUrl ||
-           (phoneNumber && phoneNumber !== originalUserInfo.phoneNumber)
+           phoneNumber !== originalUserInfo.phoneNumber
+  },
+
+  // 验证手机号格式
+  validatePhoneNumber(phoneNumber) {
+    const phoneRegex = /^1[3-9]\d{9}$/
+    return phoneRegex.test(phoneNumber)
   },
 
   // 保存用户信息
@@ -85,6 +66,14 @@ Page({
     if (!userInfo.nickName) {
       wx.showToast({
         title: '请输入昵称',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (phoneNumber && !this.validatePhoneNumber(phoneNumber)) {
+      wx.showToast({
+        title: '请输入正确的手机号',
         icon: 'none'
       })
       return
@@ -114,12 +103,18 @@ Page({
         
         if (res.result && res.result.success) {
           // 更新全局数据
-          app.globalData.userInfo = userInfo
+          app.globalData.userInfo = {
+            ...userInfo,
+            phoneNumber: phoneNumber
+          }
           
           // 保存到本地存储
           wx.setStorage({
             key: 'userInfo',
-            data: userInfo,
+            data: {
+              ...userInfo,
+              phoneNumber: phoneNumber
+            },
             success: () => {
               wx.showToast({
                 title: '保存成功',

@@ -12,11 +12,6 @@
   <view class="user-card" wx:else>
     <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
     <view class="nickname">{{userInfo.nickName || '微信用户'}}</view>
-    <view class="user-stats">
-      <view>作品 {{works}}</view>
-      <view>粉丝 {{fans}}</view>
-      <view>获赞 {{likes}}</view>
-    </view>
     <view class="button-group">
       <button class="edit-btn" bindtap="goToEditProfile">编辑资料</button>
       <button class="logout-btn" bindtap="logout">退出登录</button>
