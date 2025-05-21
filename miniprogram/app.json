@@ -5,7 +5,8 @@
     "pages/textExtract/textExtract",
     "pages/mine/mine",
     "pages/aiAssistant/aiAssistant",
-    "pages/editProfile/editProfile"
+    "pages/editProfile/editProfile",
+    "pages/material/material"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

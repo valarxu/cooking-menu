@@ -97,5 +97,12 @@ Page({
       title: '使用本地图片',
       icon: 'none'
     });
+  },
+
+  // 跳转到素材库
+  goToMaterialLib() {
+    wx.navigateTo({
+      url: '/pages/material/material'
+    })
   }
 })
