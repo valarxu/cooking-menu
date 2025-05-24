@@ -1,10 +1,12 @@
-.text-extract-container {
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
-  padding: 32rpx;
+.container {
+  padding: 32rpx 24rpx;
+  background: #f7f8fa;
+  min-height: 100vh;
 }
-.video-input {
+.section {
+  margin-bottom: 32rpx;
+}
+.input-area {
   width: 100%;
   min-height: 180rpx;
   background: #fff;
@@ -15,21 +17,7 @@
   border: 1rpx solid #e5e5e5;
   box-sizing: border-box;
 }
-.extract-btn, .copy-btn, .opt-btn {
-  background: none;
-  color: inherit;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  margin: 0;
-}
-.result-area {
-  margin-top: 24rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-.result-text {
+.output-area {
   width: 100%;
   min-height: 220rpx;
   background: #fff;
@@ -39,4 +27,4 @@
   color: #333;
   border: 1rpx solid #e5e5e5;
   box-sizing: border-box;
-} 
+}

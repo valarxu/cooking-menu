@@ -1,0 +1,14 @@
+<view class="container">
+  <view class="section">
+    <textarea class="input-area" placeholder="请输入文案内容或视频链接" value="{{inputText}}" bindinput="onInput" />
+  </view>
+  <view class="section">
+    <my-button type="primary" bindtap="onRewrite">文案仿写</my-button>
+  </view>
+  <view class="section">
+    <textarea class="output-area" value="{{outputText}}" disabled />
+  </view>
+  <view class="section">
+    <my-button type="primary" bindtap="onCopy">复制文案</my-button>
+  </view>
+</view> 

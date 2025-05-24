@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "文案仿写",
+  "usingComponents": {
+    "my-button": "/components/my-button/my-button"
+  }
+} 

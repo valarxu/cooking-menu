@@ -111,5 +111,19 @@ Page({
     wx.navigateTo({
       url: '/pages/textExtract/textExtract'
     })
+  },
+
+  // 跳转到文案仿写
+  goToTextRewrite() {
+    wx.navigateTo({
+      url: '/pages/textRewrite/textRewrite'
+    })
+  },
+
+  // 跳转到视频创作tab
+  goToVideoCreateTab() {
+    wx.switchTab({
+      url: '/pages/videoCreate/videoCreate'
+    })
   }
 })

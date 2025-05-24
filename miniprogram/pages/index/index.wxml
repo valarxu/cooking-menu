@@ -50,7 +50,7 @@
           <text class="card-desc">提取视频中的文案</text>
         </view>
       </view>
-      <view class="card-middle small-card material-lib">
+      <view class="card-middle small-card material-lib" bindtap="goToTextRewrite">
         <!-- 文案仿写 -->
         <image class="card-bg" src="{{textRewriteBgUrl}}" mode="aspectFill"></image>
         <view class="card-title">
@@ -59,7 +59,7 @@
         </view>
       </view>
     </view>
-    <view class="card-middle large-card">
+    <view class="card-middle large-card" bindtap="goToVideoCreateTab">
       <!-- AI视频创作 -->
       <image class="card-bg" src="{{videoCreateBgUrl}}" mode="aspectFill"></image>
       <view class="card-title">

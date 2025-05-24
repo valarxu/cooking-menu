@@ -7,7 +7,8 @@
     "pages/aiAssistant/aiAssistant",
     "pages/editProfile/editProfile",
     "pages/material/material",
-    "pages/uploadVideo/uploadVideo"
+    "pages/uploadVideo/uploadVideo",
+    "pages/textRewrite/textRewrite"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",
