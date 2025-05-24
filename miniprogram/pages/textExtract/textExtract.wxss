@@ -14,12 +14,12 @@
   margin-bottom: 12rpx;
 }
 .extract-btn, .copy-btn, .opt-btn {
-  background: #6C63FF;
-  color: #fff;
-  border-radius: 12rpx;
-  font-size: 30rpx;
-  padding: 18rpx 0;
-  margin-bottom: 8rpx;
+  background: none;
+  color: inherit;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
 }
 .result-area {
   margin-top: 24rpx;

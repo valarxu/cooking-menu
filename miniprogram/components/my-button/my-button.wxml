@@ -1,0 +1,3 @@
+<button class="my-btn {{type === 'outline' ? 'my-btn-outline' : ''}} {{customClass}}" catchtap="onTap">
+  <slot></slot>
+</button> 

@@ -42,7 +42,7 @@
 
   <view class="function-cards">
     <view class="left-cards">
-      <view class="card-middle small-card voice-clone">
+      <view class="card-middle small-card voice-clone" bindtap="goToTextExtract">
         <!-- 文案提取 -->
         <image class="card-bg" src="{{textExtractBgUrl}}" mode="aspectFill"></image>
         <view class="card-title">

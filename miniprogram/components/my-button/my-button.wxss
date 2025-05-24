@@ -1,0 +1,26 @@
+.my-btn {
+  background: #6145FF;
+  color: #fff;
+  border: none;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx 0 rgba(97,69,255,0.15);
+  font-size: 30rpx;
+  padding: 18rpx 0;
+  width: 80%;
+  margin: 0 auto 16rpx auto;
+  display: block;
+  transition: background 0.2s, color 0.2s;
+}
+.my-btn:active {
+  background: #4b36c9;
+}
+.my-btn-outline {
+  background: #fff;
+  color: #6145FF;
+  border: 2rpx solid #6145FF;
+  box-shadow: 0 4rpx 16rpx 0 rgba(97,69,255,0.08);
+}
+.my-btn-outline:active {
+  background: #f3f1ff;
+  color: #4b36c9;
+} 

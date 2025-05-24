@@ -59,6 +59,7 @@
   justify-content: center;
   gap: 30rpx;
   margin-top: 40rpx;
+  flex-direction: column;
   width: 600rpx;
 }
 .btn {

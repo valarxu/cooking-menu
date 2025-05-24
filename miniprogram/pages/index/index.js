@@ -104,5 +104,12 @@ Page({
     wx.navigateTo({
       url: '/pages/material/material'
     })
+  },
+
+  // 跳转到文案提取
+  goToTextExtract() {
+    wx.navigateTo({
+      url: '/pages/textExtract/textExtract'
+    })
   }
 })
