@@ -1,9 +1,4 @@
 <view class="container">
-  <view class="header">
-    <text class="title">我的素材库</text>
-    <button class="upload-btn" bindtap="chooseVideo">上传视频</button>
-  </view>
-
   <view class="video-list">
     <block wx:if="{{videoList.length > 0}}">
       <view class="video-item" wx:for="{{videoList}}" wx:key="_id">
@@ -15,24 +10,14 @@
         ></video>
         <view class="video-info">
           <text class="video-name">{{item.name}}</text>
-          <text class="upload-time">上传时间：{{item.uploadTime}}</text>
+          <text class="upload-time">{{item.uploadTime}}</text>
         </view>
       </view>
     </block>
     <view class="empty-tip" wx:else>
-      <text>暂无视频素材，点击上方按钮上传</text>
+      <text>暂无视频素材，点击下方按钮上传</text>
     </view>
   </view>
 
-  <!-- 视频名称输入弹窗 -->
-  <view wx:if="{{showNameInput}}" class="name-input-mask">
-    <view class="name-input-dialog">
-      <text>请输入视频名称</text>
-      <input class="name-input" placeholder="视频名称" value="{{inputName}}" bindinput="onInputName"/>
-      <view class="btn-row">
-        <button class="upload-btn" bindtap="onNameUpload">上传</button>
-        <button class="cancel-btn" bindtap="onNameCancel">取消</button>
-      </view>
-    </view>
-  </view>
+  <button class="upload-btn floating" bindtap="chooseVideo">上传视频</button>
 </view> 

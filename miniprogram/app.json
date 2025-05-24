@@ -6,7 +6,8 @@
     "pages/mine/mine",
     "pages/aiAssistant/aiAssistant",
     "pages/editProfile/editProfile",
-    "pages/material/material"
+    "pages/material/material",
+    "pages/uploadVideo/uploadVideo"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

@@ -3,10 +3,7 @@ const app = getApp()
 Page({
   data: {
     videoList: [],
-    hasUserInfo: false,
-    showNameInput: false,
-    inputName: '',
-    pendingVideoFile: null
+    hasUserInfo: false
   },
 
   onLoad() {
@@ -83,78 +80,13 @@ Page({
   },
 
   // 点击上传视频按钮
-  async chooseVideo() {
+  chooseVideo() {
     if (!this.data.hasUserInfo) {
       wx.showToast({ title: '请先登录', icon: 'none' })
       return
     }
-    try {
-      const { tempFiles } = await wx.chooseMedia({
-        count: 1,
-        mediaType: ['video'],
-        sourceType: ['album', 'camera'],
-        maxDuration: 60,
-        camera: 'back'
-      })
-      const videoFile = tempFiles[0]
-      this.setData({
-        pendingVideoFile: videoFile,
-        showNameInput: true,
-        inputName: ''
-      })
-    } catch (err) {
-      // 用户取消选择不提示
-    }
-  },
-
-  // 输入框输入
-  onInputName(e) {
-    this.setData({ inputName: e.detail.value })
-  },
-
-  // 取消输入
-  onNameCancel() {
-    this.setData({ showNameInput: false, inputName: '', pendingVideoFile: null })
-  },
-
-  // 确认上传
-  async onNameUpload() {
-    const { inputName, pendingVideoFile } = this.data
-    if (!inputName.trim()) {
-      wx.showToast({ title: '请输入视频名称', icon: 'none' })
-      return
-    }
-    if (!pendingVideoFile) {
-      wx.showToast({ title: '未选择视频', icon: 'none' })
-      return
-    }
-    wx.showLoading({ title: '上传中...' })
-    try {
-      // 上传视频到云存储
-      const cloudPath = `videos/${app.globalData.userInfo._openid}/${Date.now()}-${pendingVideoFile.tempFilePath.split('/').pop()}`
-      const uploadRes = await wx.cloud.uploadFile({
-        cloudPath,
-        filePath: pendingVideoFile.tempFilePath
-      })
-      // 保存视频信息到数据库
-      const db = wx.cloud.database()
-      await db.collection('videos').add({
-        data: {
-          fileID: uploadRes.fileID,
-          name: inputName,
-          size: pendingVideoFile.size,
-          duration: pendingVideoFile.duration,
-          uploadTime: db.serverDate()
-        }
-      })
-      wx.hideLoading()
-      wx.showToast({ title: '上传成功', icon: 'success' })
-      this.setData({ showNameInput: false, inputName: '', pendingVideoFile: null })
-      this.getVideoList()
-    } catch (err) {
-      wx.hideLoading()
-      wx.showToast({ title: '上传失败', icon: 'none' })
-      this.setData({ showNameInput: false, inputName: '', pendingVideoFile: null })
-    }
+    wx.navigateTo({
+      url: '/pages/uploadVideo/uploadVideo'
+    })
   }
 }) 

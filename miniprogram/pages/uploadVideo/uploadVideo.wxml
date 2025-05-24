@@ -1,0 +1,20 @@
+<view class="container">
+  <view class="upload-area">
+    <block wx:if="{{!videoFile}}">
+      <view class="choose-btn" bindtap="chooseVideo">
+        <text class="upload-text">点击上传视频素材</text>
+        <text class="upload-tip">最大支持50M</text>
+      </view>
+    </block>
+    <block wx:else>
+      <video class="video-preview" src="{{videoFile.tempFilePath}}" controls></video>
+    </block>
+  </view>
+  <view class="input-area">
+    <input class="name-input" placeholder="请输入视频名称" value="{{videoName}}" bindinput="onInputName"/>
+  </view>
+  <view class="btn-row" wx:if="{{videoFile}}">
+    <button class="btn reselect-btn" bindtap="chooseVideo">重新选择</button>
+    <button class="btn upload-btn" bindtap="uploadVideo">上传视频</button>
+  </view>
+</view> 
