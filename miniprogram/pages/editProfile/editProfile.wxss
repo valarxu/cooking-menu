@@ -2,6 +2,7 @@
   padding: 30rpx;
   background-color: #f5f5f5;
   min-height: 100vh;
+  padding-bottom: 180rpx;
 }
 
 .profile-section {
@@ -24,18 +25,18 @@
 }
 
 .avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 60rpx;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  margin-bottom: 24rpx;
 }
 
 .avatar-btn {
-  font-size: 28rpx;
+  margin-right: auto;
   padding: 0;
-  margin: 0;
   background: none;
-  color: #07c160;
-  line-height: 1.5;
+  border: none;
+  align-items: center;
 }
 
 .avatar-btn::after {
@@ -81,17 +82,75 @@
   border: none;
 }
 
-.button-section {
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 0 30rpx;
+  height: 110rpx;
+  border-radius: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.profile-label {
+  font-size: 28rpx;
+  color: #333;
+  flex: 0 0 120rpx;
+}
+
+.profile-value {
+  flex: 1;
+  text-align: right;
+  font-size: 28rpx;
+  border: none;
+  background: transparent;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 40rpx;
   margin-top: 60rpx;
   padding: 0 30rpx;
 }
 
 .save-btn {
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background-color: #07c160;
+  width: 90%;
+  margin: 48rpx auto 0 auto;
+  display: block;
+  background-color: #7c3aed;
   color: #fff;
-  font-size: 32rpx;
+  font-size: 30rpx;
   border-radius: 44rpx;
+  border: none;
+}
+
+.logout-section {
+  margin-top: 40rpx;
+  padding: 0 30rpx;
+}
+
+.logout-btn {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 88rpx;
+  width: 90%;
+  margin: 0 auto;
+  background-color: #fff;
+  color: #ff4d4f;
+  border: 2rpx solid #ff4d4f;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  display: block;
+  z-index: 100;
+}
+
+.logout-btn:active {
+  opacity: 0.8;
 } 

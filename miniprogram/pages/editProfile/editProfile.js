@@ -150,5 +150,50 @@ Page({
         })
       }
     })
+  },
+
+  // 退出登录
+  logout() {
+    // 显示确认对话框
+    wx.showModal({
+      title: '提示',
+      content: '确定要退出登录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          // 清除全局数据
+          app.globalData.userInfo = null;
+          app.globalData.isLogin = false;
+          
+          // 清除本地存储
+          wx.removeStorage({
+            key: 'userInfo',
+            success: () => {
+              console.log('本地存储的用户信息已清除');
+            }
+          });
+          
+          wx.removeStorage({
+            key: 'token',
+            success: () => {
+              console.log('本地存储的token已清除');
+            }
+          });
+          
+          // 显示退出成功提示
+          wx.showToast({
+            title: '已退出登录',
+            icon: 'success',
+            success: () => {
+              // 跳转到"我的"页面
+              setTimeout(() => {
+                wx.switchTab({
+                  url: '/pages/mine/mine'
+                });
+              }, 1500);
+            }
+          });
+        }
+      }
+    });
   }
 }) 

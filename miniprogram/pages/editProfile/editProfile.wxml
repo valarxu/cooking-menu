@@ -1,25 +1,18 @@
 <view class="edit-profile-container">
-  <view class="profile-section">
-    <view class="section-title">头像</view>
-    <view class="avatar-section">
-      <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
-      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">更换头像</button>
-    </view>
+  <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" >
+    <image class="avatar clickable" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
+  </button>
+
+  <view class="profile-row">
+    <view class="profile-label">昵称</view>
+    <input class="profile-value" type="nickname" placeholder="请输入昵称" value="{{userInfo.nickName}}" bindinput="onInputNickname" />
   </view>
 
-  <view class="profile-section">
-    <view class="section-title">昵称</view>
-    <input class="nickname-input" type="nickname" placeholder="请输入昵称" value="{{userInfo.nickName}}" bindinput="onInputNickname"/>
+  <view class="profile-row">
+    <view class="profile-label">手机号</view>
+    <input class="profile-value" type="number" placeholder="请输入手机号" value="{{phoneNumber}}" bindinput="onInputPhoneNumber" maxlength="11" />
   </view>
 
-  <view class="profile-section">
-    <view class="section-title">手机号</view>
-    <view class="phone-section">
-      <input class="phone-input" type="number" placeholder="请输入手机号" value="{{phoneNumber}}" bindinput="onInputPhoneNumber" maxlength="11"/>
-    </view>
-  </view>
-
-  <view class="button-section">
-    <button class="save-btn" bindtap="saveUserInfo">保存</button>
-  </view>
-</view> 
+  <button class="save-btn" bindtap="saveUserInfo">保存</button>
+  <button class="logout-btn" bindtap="logout">退出登录</button>
+</view>

@@ -73,7 +73,24 @@ Page({
             }, () => {
               console.log('onShow 从本地存储更新状态完成:', this.data);
             });
+          } else {
+            // 如果本地存储也没有用户信息，则设置为未登录状态
+            this.setData({
+              userInfo: null,
+              hasUserInfo: false,
+              isLoginProcess: false,
+              tempUserInfo: {}
+            });
           }
+        },
+        fail: () => {
+          // 如果获取本地存储失败，则设置为未登录状态
+          this.setData({
+            userInfo: null,
+            hasUserInfo: false,
+            isLoginProcess: false,
+            tempUserInfo: {}
+          });
         }
       });
     }
@@ -348,51 +365,6 @@ Page({
     }).catch(err => {
       console.error('查询用户信息失败', err)
     })
-  },
-
-  // 退出登录
-  logout() {
-    // 显示确认对话框
-    wx.showModal({
-      title: '提示',
-      content: '确定要退出登录吗？',
-      success: (res) => {
-        if (res.confirm) {
-          // 清除全局数据
-          app.globalData.userInfo = null;
-          app.globalData.isLogin = false;
-          
-          // 清除本地存储
-          wx.removeStorage({
-            key: 'userInfo',
-            success: () => {
-              console.log('本地存储的用户信息已清除');
-            }
-          });
-          
-          wx.removeStorage({
-            key: 'token',
-            success: () => {
-              console.log('本地存储的token已清除');
-            }
-          });
-          
-          // 重置页面状态
-          this.setData({
-            userInfo: null,
-            hasUserInfo: false,
-            isLoginProcess: false,
-            tempUserInfo: {}
-          });
-          
-          // 显示退出成功提示
-          wx.showToast({
-            title: '已退出登录',
-            icon: 'success'
-          });
-        }
-      }
-    });
   },
 
   // 跳转到编辑资料页面
