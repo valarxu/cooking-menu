@@ -1,4 +1,5 @@
 <view class="container">
+  <view class="import-btn" bindtap="importShopInfo">导入已有店铺信息</view>
   <view class="form">
     <view class="form-item">
       <text class="label">门店地址</text>
@@ -18,7 +19,7 @@
     </view>
     <view class="form-item">
       <text class="label">活动优惠</text>
-      <input class="input" placeholder="请输入" value="{{discount}}" data-field="discount" bindinput="onInput" />
+      <input class="input" placeholder="请输入" value="{{promotion}}" data-field="promotion" bindinput="onInput" />
     </view>
     <view class="button-group">
       <my-button bindtap="generateSaleText">生成卖货文案</my-button>

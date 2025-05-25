@@ -64,4 +64,13 @@
 my-button {
   width: 100%;
   margin-top: 24rpx;
+}
+.import-btn {
+  width: 100%;
+  padding: 20rpx;
+  text-align: center;
+  color: #07c160;
+  font-size: 28rpx;
+  border-bottom: 1rpx solid #eee;
+  margin-bottom: 20rpx;
 } 
