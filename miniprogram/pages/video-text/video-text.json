@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "爆款短视频文案创作",
+  "usingComponents": {
+    "my-button": "/components/my-button/my-button"
+  }
+} 

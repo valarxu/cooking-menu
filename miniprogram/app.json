@@ -8,7 +8,9 @@
     "pages/editProfile/editProfile",
     "pages/material/material",
     "pages/uploadVideo/uploadVideo",
-    "pages/textRewrite/textRewrite"
+    "pages/textRewrite/textRewrite",
+    "pages/shopInfo/shopInfo",
+    "pages/video-text/video-text"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

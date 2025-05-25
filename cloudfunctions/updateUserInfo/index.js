@@ -6,7 +6,7 @@ cloud.init({
 
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
-  const { userInfo, phoneNumber } = event
+  const { userInfo, phoneNumber, shopInfo } = event
   
   try {
     const db = cloud.database()
@@ -17,14 +17,17 @@ exports.main = async (event, context) => {
     }
     
     // 只更新有变化的字段
-    if (userInfo.nickName) {
+    if (userInfo && userInfo.nickName) {
       updateData.nickName = userInfo.nickName
     }
-    if (userInfo.avatarUrl) {
+    if (userInfo && userInfo.avatarUrl) {
       updateData.avatarUrl = userInfo.avatarUrl
     }
     if (phoneNumber) {
       updateData.phoneNumber = phoneNumber
+    }
+    if (shopInfo) {
+      updateData.shopInfo = shopInfo
     }
     
     // 更新用户信息
@@ -39,8 +42,9 @@ exports.main = async (event, context) => {
       await db.collection('users').add({
         data: {
           _openid: wxContext.OPENID,
-          ...userInfo,
+          ...(userInfo || {}),
           phoneNumber: phoneNumber,
+          shopInfo: shopInfo,
           createTime: db.serverDate(),
           updateTime: db.serverDate()
         }

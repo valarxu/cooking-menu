@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "我的店铺信息",
+  "usingComponents": {
+    "my-button": "/components/my-button/my-button"
+  }
+} 

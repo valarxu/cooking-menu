@@ -372,5 +372,18 @@ Page({
     wx.navigateTo({
       url: '/pages/editProfile/editProfile'
     })
-  }
+  },
+
+  goToShopInfo() {
+    wx.navigateTo({
+      url: '/pages/shopInfo/shopInfo',
+    });
+  },
+
+  showVipMsg() {
+    wx.showToast({
+      title: '未开发',
+      icon: 'none'
+    });
+  },
 }) 

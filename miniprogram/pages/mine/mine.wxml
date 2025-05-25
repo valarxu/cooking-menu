@@ -16,4 +16,14 @@
       <button class="edit-btn" bindtap="goToEditProfile">编辑资料</button>
     </view>
   </view>
+  <view class="mine-card-list" wx:if="{{hasUserInfo}}">
+    <view class="mine-card" bindtap="goToShopInfo">
+      <image class="card-icon" src="/images/icon/shop.png" mode="aspectFill" />
+      <view class="card-title">我的店铺信息</view>
+    </view>
+    <view class="mine-card" bindtap="showVipMsg">
+      <image class="card-icon" src="/images/icon/id_card.png" mode="aspectFill" />
+      <view class="card-title">会员与积分</view>
+    </view>
+  </view>
 </view> 

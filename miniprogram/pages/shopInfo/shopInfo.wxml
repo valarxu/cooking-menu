@@ -1,0 +1,10 @@
+<view class="shop-info-container">
+  <view class="shop-info-title">为了帮您推荐更适合您的短视频文案脚本，请完善您的店铺及产品信息</view>
+  <view class="form-item"><view class="label">门店地址（必填）</view><input class="input" placeholder="请输入内容" value="{{shopInfo.address}}" bindinput="onInputAddress" /></view>
+  <view class="form-item"><view class="label">产品类型（必填）</view><input class="input" placeholder="请输入内容" value="{{shopInfo.type}}" bindinput="onInputType" /></view>
+  <view class="form-item"><view class="label">产品名称（必填）</view><input class="input" placeholder="请输入内容" value="{{shopInfo.name}}" bindinput="onInputName" /></view>
+  <view class="form-item"><view class="label">产品卖点（必填）</view><input class="input" placeholder="请输入内容" value="{{shopInfo.sellingPoint}}" bindinput="onInputSellingPoint" /></view>
+  <view class="form-item"><view class="label">优惠活动</view><input class="input" placeholder="请输入内容" value="{{shopInfo.promotion}}" bindinput="onInputPromotion" /></view>
+  <view class="form-item"><view class="label">其他</view><input class="input" placeholder="请输入内容" value="{{shopInfo.other}}" bindinput="onInputOther" /></view>
+  <my-button bindtap="saveShopInfo">保存</my-button>
+</view> 

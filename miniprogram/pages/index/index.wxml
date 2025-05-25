@@ -70,7 +70,7 @@
   </view>
 
   <view class="bottom-card">
-    <view class="card-middle full-width-card">
+    <view class="card-middle full-width-card" bindtap="goToVideoText">
       <!-- 爆款短视频文案创作 -->
       <image class="card-bg" src="{{videoTextBgUrl}}" mode="aspectFill"></image>
       <view class="card-bottom-title">

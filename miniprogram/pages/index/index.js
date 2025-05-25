@@ -125,5 +125,12 @@ Page({
     wx.switchTab({
       url: '/pages/videoCreate/videoCreate'
     })
+  },
+
+  // 跳转到爆款短视频文案创作
+  goToVideoText() {
+    wx.navigateTo({
+      url: '/pages/video-text/video-text'
+    })
   }
 })

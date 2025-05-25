@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="form">
+    <view class="form-item">
+      <text class="label">门店地址</text>
+      <input class="input" placeholder="请输入" value="{{address}}" data-field="address" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="label">产品类型</text>
+      <input class="input" placeholder="请输入" value="{{type}}" data-field="type" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="label">产品名称</text>
+      <input class="input" placeholder="请输入" value="{{name}}" data-field="name" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="label">产品卖点</text>
+      <input class="input" placeholder="请输入" value="{{sellingPoint}}" data-field="sellingPoint" bindinput="onInput" />
+    </view>
+    <view class="form-item">
+      <text class="label">活动优惠</text>
+      <input class="input" placeholder="请输入" value="{{discount}}" data-field="discount" bindinput="onInput" />
+    </view>
+    <view class="button-group">
+      <my-button bindtap="generateSaleText">生成卖货文案</my-button>
+      <my-button bindtap="generatePersonaText">生成人设文案</my-button>
+    </view>
+  </view>
+  <view class="output-title">以下是帮您生成的文案</view>
+  <view class="output-box">{{outputText}}</view>
+  <my-button type="primary" bindtap="copyText">复制文案</my-button>
+</view>
