@@ -1,18 +1,75 @@
 <view class="video-create-container">
-  <textarea class="text-input" placeholder="请输入内容" bindinput="onTextInput"></textarea>
-  <button class="ai-btn">AI生成</button>
-  <picker mode="selector" range="['自动匹配']" bindchange="onBgmChange">
-    <view class="picker">BGM 选择：{{bgm}}</view>
-  </picker>
-  <button class="opt-btn">一键优化</button>
-  <picker mode="selector" range="['A']" bindchange="onVoiceChange">
-    <view class="picker">口播音色：{{voice}}</view>
-  </picker>
-  <button class="upload-btn" bindtap="onUploadMaterial">上传配音</button>
-  <view class="upload-area">
-    <text>请上传视频素材</text>
-    <button class="upload-btn">+</button>
+  <!-- 步骤一：文案输入 -->
+  <view wx:if="{{step === 1}}">
+    <textarea class="text-input" placeholder="请输入文案" value="{{text}}" bindinput="onTextInput"></textarea>
+    <view class="btn-container">
+      <my-button type="primary" type="outline" bindtap="onAIGenerate">AI生成</my-button>
+      <my-button type="primary" bindtap="nextStep">下一步</my-button>
+    </view>
   </view>
-  <button class="auto-tune-btn">素材封面自动调调</button>
-  <button class="gen-video-btn">生成视频</button>
-</view> 
+
+  <!-- 步骤二：口播音频+BGM选择 -->
+  <view wx:if="{{step === 2}}">
+    <view class="step-title">口播音频选择</view>
+    <radio-group bindchange="onVoiceTypeChange">
+      <label>
+        <radio value="ai" checked="{{voiceType==='ai'}}" />AI口播
+      </label>
+      <label>
+        <radio value="clone" checked="{{voiceType==='clone'}}" />克隆声音
+      </label>
+      <label>
+        <radio value="upload" checked="{{voiceType==='upload'}}" />上传配音
+      </label>
+    </radio-group>
+    <view class="btn-container">
+      <view wx:if="{{voiceType==='upload'}}">
+        <my-button type="primary" bindtap="onUploadVoice">上传配音</my-button>
+      </view>
+    </view>
+    <view class="step-title" style="margin-top:32rpx;">BGM选择</view>
+    <radio-group bindchange="onBgmTypeChange">
+      <label>
+        <radio value="auto" checked="{{bgmType==='auto'}}" />自动匹配
+      </label>
+      <label>
+        <radio value="upload" checked="{{bgmType==='upload'}}" />自己上传
+      </label>
+    </radio-group>
+    <view class="btn-container">
+      <view wx:if="{{bgmType==='upload'}}">
+        <my-button type="primary" bindtap="onUploadBgm">上传BGM</my-button>
+      </view>
+      <my-button type="outline" bindtap="prevStep">上一步</my-button>
+      <my-button type="primary" bindtap="nextStep">下一步</my-button>
+    </view>
+  </view>
+
+  <!-- 步骤三：视频素材选择 -->
+  <view wx:if="{{step === 3}}">
+    <view>请选择视频素材（可多选）：</view>
+    <checkbox-group value="{{selectedMaterialIds}}" bindchange="onMaterialCheckboxChange">
+      <view class="video-list">
+        <block wx:if="{{materialList.length > 0}}">
+          <view class="video-item" wx:for="{{materialList}}" wx:key="_id">
+            <view style="position:relative;">
+              <video class="video-player" src="{{item.fileID}}" show-center-play-btn="{{true}}" controls></video>
+              <checkbox class="material-checkbox" value="{{item._id}}" style="position:absolute;top:8rpx;right:8rpx;z-index:2;" />
+            </view>
+            <view class="video-info">
+              <text class="video-name">{{item.name}}</text>
+              <text class="upload-time">{{item.uploadTime}}</text>
+            </view>
+          </view>
+        </block>
+        <view class="empty-tip" wx:else>
+          <text>暂无视频素材</text>
+        </view>
+      </view>
+    </checkbox-group>
+    <view class="btn-container">
+      <my-button type="default" bindtap="prevStep">上一步</my-button>
+      <my-button type="primary" bindtap="onGenerateVideo">生成视频</my-button>
+    </view>
+  </view>
+</view>
