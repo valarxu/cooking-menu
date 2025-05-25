@@ -1,3 +1,26 @@
-<view class="ai-assistant-container">
-  <text>AI助手页面</text>
+<view class="container">
+  <scroll-view class="chat-container" scroll-y="true" scroll-into-view="{{scrollToMessage}}">
+    <view class="message-list">
+      <block wx:for="{{messages}}" wx:key="index">
+        <view class="message {{item.type === 'user' ? 'user-message' : 'ai-message'}}" id="msg-{{index}}">
+          <view class="avatar">
+            <image src="{{item.type === 'user' ? userAvatarUrl : '/images/ai-avatar.png'}}"></image>
+          </view>
+          <view class="content">
+            <text>{{item.content}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+  
+  <view class="input-container">
+    <input class="input" 
+           value="{{inputValue}}" 
+           bindinput="onInput" 
+           placeholder="请输入您的问题..."
+           confirm-type="send"
+           bindconfirm="sendMessage"/>
+    <view class="send-btn {{inputValue ? 'active' : ''}}" bindtap="sendMessage">发送</view>
+  </view>
 </view> 
