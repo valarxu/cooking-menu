@@ -16,6 +16,7 @@ Page({
       return;
     }
 
+    // 先设置 loading 状态
     this.setData({ loading: true });
     
     // 使用 Promise 包装 wx.request
@@ -63,6 +64,7 @@ Page({
         });
       },
       complete: () => {
+        // 确保在请求完成后关闭 loading 状态
         this.setData({ loading: false });
       }
     });

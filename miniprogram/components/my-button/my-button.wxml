@@ -1,3 +1,4 @@
-<button class="my-btn {{type === 'outline' ? 'my-btn-outline' : ''}} {{customClass}}" catchtap="onTap">
+<button class="my-btn {{type === 'outline' ? 'my-btn-outline' : ''}} {{customClass}} {{loading ? 'my-btn-loading' : ''}}" catchtap="onTap">
+  <view wx:if="{{loading}}" class="loading-icon"></view>
   <slot></slot>
 </button> 

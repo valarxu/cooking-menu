@@ -10,10 +10,15 @@ Component({
     type: {
       type: String,
       value: 'primary' // 支持primary/outline
+    },
+    loading: {
+      type: Boolean,
+      value: false
     }
   },
   methods: {
     onTap(e) {
+      if (this.data.loading) return;
       this.triggerEvent('tap', e);
     }
   }

@@ -3,11 +3,12 @@
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 .input-area, .output-area {
   width: 100%;
-  height: 200rpx;
   padding: 20rpx;
   box-sizing: border-box;
   border: 2rpx solid #e0e0e0;
@@ -16,8 +17,16 @@
   background: #fff;
 }
 
+.input-area {
+  height: 200rpx;
+}
+
 .output-area {
   background: #f8f8f8;
+  flex: 1;
+  min-height: 400rpx;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .rewrite-btn, .copy-btn {
