@@ -1,19 +1,81 @@
 Page({
   data: {
     inputText: '',
-    outputText: '【Mock仿写文案】这里是仿写后的文案内容，后续将由AI生成。'
+    outputText: '',
+    loading: false
   },
   onInput(e) {
     this.setData({ inputText: e.detail.value });
   },
   onRewrite() {
-    console.log('输入内容：', this.data.inputText);
-    // 这里后续可接AI接口
-    this.setData({
-      outputText: '【Mock仿写文案】' + this.data.inputText
+    if (!this.data.inputText.trim()) {
+      wx.showToast({
+        title: '请输入文案内容',
+        icon: 'none'
+      });
+      return;
+    }
+
+    this.setData({ loading: true });
+    
+    // 使用 Promise 包装 wx.request
+    wx.request({
+      url: 'https://api.coze.cn/v1/workflow/run',
+      method: 'POST',
+      header: {
+        'Authorization': 'Bearer pat_kYuRTIN9Yo839HwSA9rzm89yWL8BPVxj6noyto3ri3gZXkHVgImDHqkLpFOtgC6T',
+        'Content-Type': 'application/json'
+      },
+      data: {
+        workflow_id: '7509119431479607311',
+        parameters: {
+          input: this.data.inputText
+        }
+      },
+      timeout: 600000, // 600秒超时
+      success: (response) => {
+        console.log('API响应：', response);
+        if (response.statusCode === 200 && response.data.code === 0) {
+          try {
+            const outputData = JSON.parse(response.data.data);
+            this.setData({
+              outputText: outputData.output
+            });
+          } catch (error) {
+            console.error('解析响应数据失败：', error);
+            wx.showToast({
+              title: '解析响应失败',
+              icon: 'none'
+            });
+          }
+        } else {
+          wx.showToast({
+            title: response.data.msg || '请求失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (error) => {
+        console.error('请求失败：', error);
+        wx.showToast({
+          title: '请求失败，请重试',
+          icon: 'none'
+        });
+      },
+      complete: () => {
+        this.setData({ loading: false });
+      }
     });
   },
   onCopy() {
+    if (!this.data.outputText) {
+      wx.showToast({
+        title: '没有可复制的内容',
+        icon: 'none'
+      });
+      return;
+    }
+    
     wx.setClipboardData({
       data: this.data.outputText,
       success: () => {
