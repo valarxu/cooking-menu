@@ -1,6 +1,6 @@
 <view class="container">
   <textarea class="input-area" placeholder="请输入需要仿写的文案" bindinput="onInput" value="{{inputText}}"></textarea>
   <my-button bind:tap="onRewrite" loading="{{loading}}">文案仿写</my-button>
-  <textarea class="output-area" placeholder="这里将显示仿写后的文案" value="{{outputText}}"></textarea>
+  <textarea class="output-area" placeholder="这里将显示仿写后的文案" value="{{outputText}}" maxlength="{{-1}}"></textarea>
   <my-button bindtap="onCopy">复制文案</my-button>
 </view> 
