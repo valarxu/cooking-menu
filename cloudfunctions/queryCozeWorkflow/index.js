@@ -18,13 +18,17 @@ async function retry(fn, retries = 3, delay = 1000) {
 
 exports.main = async (event, context) => {
   try {
-    const { workflow_id, parameters, is_async = true } = event;
+    const { workflow_id, execute_id } = event;
     
     if (!workflow_id) {
       throw new Error('workflow_id is required');
     }
     
-    console.log('开始处理请求，workflow_id：', workflow_id, '参数：', parameters, '异步模式：', is_async);
+    if (!execute_id) {
+      throw new Error('execute_id is required');
+    }
+    
+    console.log('开始查询工作流执行结果，workflow_id：', workflow_id, 'execute_id：', execute_id);
     
     // 从环境变量获取token
     const token = process.env.COZE_TOKEN;
@@ -34,37 +38,27 @@ exports.main = async (event, context) => {
     
     // 创建 axios 实例，设置超时时间
     const api = axios.create({
-      timeout: 30000, // 30秒超时
+      timeout: 10000, // 10秒超时
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
     
-    const requestData = {
-      workflow_id: workflow_id,
-      parameters: parameters || {}
-    };
-    
-    // 如果是异步模式，添加异步参数
-    if (is_async) {
-      requestData.is_async = true;
-    }
-    
     const response = await retry(async () => {
-      console.log('发起API请求...');
-      const result = await api.post('https://api.coze.cn/v1/workflow/run', requestData);
-      console.log('API请求成功');
+      console.log('发起查询API请求...');
+      const result = await api.get(`https://api.coze.cn/v1/workflows/${workflow_id}/run_histories/${execute_id}`);
+      console.log('查询API请求成功');
       return result;
     });
 
-    console.log('处理响应数据');
+    console.log('处理查询响应数据');
     return {
       success: true,
       data: response.data
     };
   } catch (error) {
-    console.error('API调用错误：', error.response?.data || error.message);
+    console.error('查询API调用错误：', error.response?.data || error.message);
     return {
       success: false,
       error: error.response?.data?.message || error.message
