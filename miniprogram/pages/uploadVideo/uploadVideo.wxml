@@ -43,11 +43,11 @@
       <text class="picker-title">选择视频类型</text>
       <text class="picker-confirm" bindtap="onTypePickerConfirm">确定</text>
     </view>
-    <picker-view class="picker-body" indicator-style="height: 50px;" value="{{[0]}}" bindchange="onTypePickerChange">
-      <picker-view-column>
-        <view wx:for="{{typeOptions}}" wx:key="value" class="picker-item">{{item.label}}</view>
-      </picker-view-column>
-    </picker-view>
+    <picker-view class="picker-body" indicator-style="height: 50px;" value="{{[selectedTypeIndex]}}" bindchange="onTypePickerChange">
+       <picker-view-column>
+         <view wx:for="{{typeOptions}}" wx:key="value" class="picker-item">{{item.label}}</view>
+       </picker-view-column>
+     </picker-view>
   </view>
 </view>
 
@@ -59,10 +59,10 @@
       <text class="picker-title">选择关联产品</text>
       <text class="picker-confirm" bindtap="onProductPickerConfirm">确定</text>
     </view>
-    <picker-view class="picker-body" indicator-style="height: 50px;" value="{{[0]}}" bindchange="onProductPickerChange">
-      <picker-view-column>
-        <view wx:for="{{products}}" wx:key="_id" class="picker-item">{{item.name}}</view>
-      </picker-view-column>
-    </picker-view>
+    <picker-view class="picker-body" indicator-style="height: 50px;" value="{{[selectedProductIndex]}}" bindchange="onProductPickerChange">
+       <picker-view-column>
+         <view wx:for="{{products}}" wx:key="_id" class="picker-item">{{item.name}}</view>
+       </picker-view-column>
+     </picker-view>
   </view>
 </view>

@@ -6,6 +6,7 @@ Page({
     videoName: '',
     videoType: '',
     relatedProduct: '',
+    relatedProductName: '',
     typeOptions: [
       { value: '店铺环境', label: '店铺环境' },
       { value: '产品外观', label: '产品外观' },
@@ -124,6 +125,7 @@ Page({
     this.setData({
       selectedProductIndex: e.detail.value[0]
     })
+    console.log("selectedProductIndex", e.detail.value[0])
   },
 
   // 产品选择器确认
@@ -132,7 +134,8 @@ Page({
     if (this.data.products[index]) {
       this.setData({
         relatedProduct: this.data.products[index]._id,
-        showProductPicker: false
+        showProductPicker: false,
+        relatedProductName: this.data.products[index].name
       })
     }
   },
