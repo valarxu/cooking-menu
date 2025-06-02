@@ -78,4 +78,86 @@
 .upload-btn {
   background-color: #6145FF;
   color: #fff;
-} 
+}
+
+.picker-input {
+  border: 1px solid #eee;
+  border-radius: 8rpx;
+  padding: 18rpx;
+  font-size: 30rpx;
+  background: #fff;
+  width: 600rpx;
+  height: auto;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.picker-input .placeholder {
+  color: #999;
+}
+
+.picker-input .selected {
+  color: #333;
+}
+
+.picker-input .arrow {
+  color: #999;
+  font-size: 24rpx;
+}
+
+.picker-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.picker-content {
+  background: #fff;
+  width: 100%;
+  border-radius: 20rpx 20rpx 0 0;
+}
+
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.picker-cancel {
+  color: #999;
+  font-size: 32rpx;
+}
+
+.picker-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.picker-confirm {
+  color: #6145FF;
+  font-size: 32rpx;
+}
+
+.picker-body {
+  height: 400rpx;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  font-size: 32rpx;
+  color: #333;
+}

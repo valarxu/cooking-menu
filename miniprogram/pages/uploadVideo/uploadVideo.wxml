@@ -10,11 +10,59 @@
       <video class="video-preview" src="{{videoFile.tempFilePath}}" controls></video>
     </block>
   </view>
+  
   <view class="input-area">
     <input class="name-input" placeholder="请输入视频名称" value="{{videoName}}" bindinput="onInputName"/>
   </view>
+  
+  <view class="input-area">
+    <view class="picker-input" bindtap="showTypePicker">
+      <text class="{{videoType ? 'selected' : 'placeholder'}}">{{videoType || '请选择视频类型'}}</text>
+      <text class="arrow">></text>
+    </view>
+  </view>
+  
+  <view class="input-area">
+    <view class="picker-input" bindtap="showProductPicker">
+      <text class="{{relatedProduct ? 'selected' : 'placeholder'}}">{{relatedProduct ? relatedProductName : '请选择关联产品（可选）'}}</text>
+      <text class="arrow">></text>
+    </view>
+  </view>
+  
   <view class="btn-row" wx:if="{{videoFile}}">
     <my-button class="copy-btn" type="outline" bindtap="chooseVideo">重新选择</my-button>
     <my-button class="opt-btn" bindtap="uploadVideo">上传视频</my-button>
   </view>
-</view> 
+</view>
+
+<!-- 类型选择弹窗 -->
+<view class="picker-mask" wx:if="{{showTypePicker}}" bindtap="onTypePickerCancel">
+  <view class="picker-content" catchtap="">
+    <view class="picker-header">
+      <text class="picker-cancel" bindtap="onTypePickerCancel">取消</text>
+      <text class="picker-title">选择视频类型</text>
+      <text class="picker-confirm" bindtap="onTypePickerConfirm">确定</text>
+    </view>
+    <picker-view class="picker-body" indicator-style="height: 50px;" value="{{[0]}}" bindchange="onTypePickerChange">
+      <picker-view-column>
+        <view wx:for="{{typeOptions}}" wx:key="value" class="picker-item">{{item.label}}</view>
+      </picker-view-column>
+    </picker-view>
+  </view>
+</view>
+
+<!-- 产品选择弹窗 -->
+<view class="picker-mask" wx:if="{{showProductPicker}}" bindtap="onProductPickerCancel">
+  <view class="picker-content" catchtap="">
+    <view class="picker-header">
+      <text class="picker-cancel" bindtap="onProductPickerCancel">取消</text>
+      <text class="picker-title">选择关联产品</text>
+      <text class="picker-confirm" bindtap="onProductPickerConfirm">确定</text>
+    </view>
+    <picker-view class="picker-body" indicator-style="height: 50px;" value="{{[0]}}" bindchange="onProductPickerChange">
+      <picker-view-column>
+        <view wx:for="{{products}}" wx:key="_id" class="picker-item">{{item.name}}</view>
+      </picker-view-column>
+    </picker-view>
+  </view>
+</view>

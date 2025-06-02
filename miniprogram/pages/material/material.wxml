@@ -1,7 +1,25 @@
 <view class="container">
+  <!-- TAB标签 -->
+  <view class="tab-bar">
+    <scroll-view class="tab-scroll" scroll-x="true">
+      <view class="tab-list">
+        <view 
+          class="tab-item {{currentTab === index ? 'active' : ''}}"
+          wx:for="{{tabs}}"
+          wx:key="value"
+          data-index="{{index}}"
+          bindtap="switchTab"
+        >
+          <text class="tab-text">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 视频列表 -->
   <view class="video-list">
-    <block wx:if="{{videoList.length > 0}}">
-      <view class="video-item" wx:for="{{videoList}}" wx:key="_id">
+    <block wx:if="{{filteredVideoList.length > 0}}">
+      <view class="video-item" wx:for="{{filteredVideoList}}" wx:key="_id">
         <video 
           class="video-player"
           src="{{item.fileID}}"
@@ -10,14 +28,16 @@
         ></video>
         <view class="video-info">
           <text class="video-name">{{item.name}}</text>
+          <text class="video-type" wx:if="{{item.type}}">类型：{{item.type}}</text>
+          <text class="video-product" wx:if="{{item.productName}}">关联产品：{{item.productName}}</text>
           <text class="upload-time">{{item.uploadTime}}</text>
         </view>
       </view>
     </block>
     <view class="empty-tip" wx:else>
-      <text>暂无视频素材，点击下方按钮上传</text>
+      <text>暂无{{tabs[currentTab].name}}视频素材，点击下方按钮上传</text>
     </view>
   </view>
 
   <button class="upload-btn floating" bindtap="chooseVideo">上传视频</button>
-</view> 
+</view>
