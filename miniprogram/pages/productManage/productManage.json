@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "产品管理",
+  "usingComponents": {
+    "my-button": "/components/my-button/my-button"
+  }
+}

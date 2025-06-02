@@ -1,0 +1,29 @@
+<view class="container">
+  <!-- 新增产品按钮 -->
+  <button class="upload-btn floating" bindtap="goToAddProduct">新增产品</button>
+
+  <!-- 产品列表 -->
+  <view class="product-list" wx:if="{{products.length > 0}}">
+    <view class="product-item" wx:for="{{products}}" wx:key="_id" bindtap="editProduct" data-product="{{item}}">
+      <view class="product-image">
+        <image src="{{item.image || '/images/default-product.png'}}" mode="aspectFill"></image>
+      </view>
+      <view class="product-info">
+        <text class="product-name">{{item.name}}</text>
+        <text class="product-price">¥{{item.price}}</text>
+        <text class="product-selling-point">{{item.sellingPoint}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{products.length === 0 && !loading}}">
+    <image src="/images/empty-product.png" class="empty-image"></image>
+    <text class="empty-text">暂无产品，点击上方按钮添加产品</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

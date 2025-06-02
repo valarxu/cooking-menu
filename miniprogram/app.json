@@ -10,7 +10,9 @@
     "pages/uploadVideo/uploadVideo",
     "pages/textRewrite/textRewrite",
     "pages/shopInfo/shopInfo",
-    "pages/video-text/video-text"
+    "pages/video-text/video-text",
+    "pages/productManage/productManage",
+    "pages/addProduct/addProduct"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

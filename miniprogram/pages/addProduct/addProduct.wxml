@@ -1,0 +1,39 @@
+<view class="container">
+  <form bindsubmit="onSubmit">
+    <!-- 产品名称 -->
+    <view class="form-item">
+      <view class="label required">产品名称</view>
+      <input class="input" placeholder="请输入产品名称" bindinput="onNameInput" value="{{formData.name}}" maxlength="50" />
+    </view>
+
+    <!-- 产品图片 -->
+    <view class="form-item">
+      <view class="label">产品图片</view>
+      <view class="image-upload" bindtap="chooseImage">
+        <image wx:if="{{formData.image}}" src="{{formData.image}}" class="preview-image" mode="aspectFill"></image>
+        <view wx:else class="upload-placeholder">
+          <text class="upload-icon">+</text>
+          <text class="upload-text">点击上传图片</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 产品卖点 -->
+    <view class="form-item">
+      <view class="label required">产品卖点</view>
+      <textarea class="textarea" placeholder="请输入产品卖点" bindinput="onSellingPointInput" value="{{formData.sellingPoint}}" maxlength="200"></textarea>
+    </view>
+
+    <!-- 产品售价 -->
+    <view class="form-item">
+      <view class="label">产品售价</view>
+      <input class="input" placeholder="请输入产品售价" bindinput="onPriceInput" value="{{formData.price}}" type="digit" />
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-container">
+      <my-button bind:tap="onSubmit" loading="{{submitting}}">{{isEdit ? '更新产品' : '保存产品'}}</my-button>
+      <my-button wx:if="{{isEdit}}" bind:tap="onDelete" type="outline" custom-class="delete-btn">删除产品</my-button>
+    </view>
+  </form>
+</view>

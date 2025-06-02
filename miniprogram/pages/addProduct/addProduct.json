@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "添加产品",
+  "usingComponents": {
+    "my-button": "/components/my-button/my-button"
+  }
+}

@@ -31,7 +31,7 @@
     </view>
   </view>
   <view class="bottom-card">
-    <view class="card-middle full-width-card">
+    <view class="card-middle full-width-card" bindtap="goToProductManage">
       <!-- 产品管理 -->
       <image class="card-bg" src="{{productManageUrl}}" mode="aspectFill"></image>
       <view class="card-bottom-title">

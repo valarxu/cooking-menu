@@ -132,5 +132,12 @@ Page({
     wx.navigateTo({
       url: '/pages/video-text/video-text'
     })
+  },
+
+  // 跳转到产品管理
+  goToProductManage() {
+    wx.navigateTo({
+      url: '/pages/productManage/productManage'
+    })
   }
 })
