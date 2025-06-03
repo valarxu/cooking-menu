@@ -12,7 +12,8 @@
     "pages/shopInfo/shopInfo",
     "pages/video-text/video-text",
     "pages/productManage/productManage",
-    "pages/addProduct/addProduct"
+    "pages/addProduct/addProduct",
+    "pages/voiceClone/voiceClone"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

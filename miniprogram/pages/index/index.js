@@ -139,5 +139,12 @@ Page({
     wx.navigateTo({
       url: '/pages/productManage/productManage'
     })
+  },
+
+  // 跳转到声音克隆
+  goToVoiceClone() {
+    wx.navigateTo({
+      url: '/pages/voiceClone/voiceClone'
+    })
   }
 })

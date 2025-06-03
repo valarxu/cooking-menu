@@ -14,7 +14,7 @@
       </view>
     </view>
     <view class="right-cards">
-      <view class="card small-card voice-clone">
+      <view class="card small-card voice-clone" bindtap="goToVoiceClone">
         <!-- 声音克隆 -->
         <image class="card-bg" src="{{voiceCloneBgUrl}}" mode="aspectFill"></image>
         <view class="card-content">
