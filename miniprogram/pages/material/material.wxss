@@ -49,8 +49,6 @@
 .tab-item {
   flex-shrink: 0;
   padding: 20rpx 30rpx;
-  margin-right: 20rpx;
-  border-radius: 30rpx;
   transition: all 0.3s;
 }
 
