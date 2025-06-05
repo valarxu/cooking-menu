@@ -1,32 +1,162 @@
 <view class="container">
-  <view class="import-btn" bindtap="importShopInfo">导入已有店铺信息</view>
-  <view class="form">
-    <view class="form-item">
-      <text class="label">门店地址</text>
-      <input class="input" placeholder="请输入" value="{{address}}" data-field="address" bindinput="onInput" />
-    </view>
-    <view class="form-item">
-      <text class="label">产品类型</text>
-      <input class="input" placeholder="请输入" value="{{type}}" data-field="type" bindinput="onInput" />
-    </view>
-    <view class="form-item">
-      <text class="label">产品名称</text>
-      <input class="input" placeholder="请输入" value="{{name}}" data-field="name" bindinput="onInput" />
-    </view>
-    <view class="form-item">
-      <text class="label">产品卖点</text>
-      <input class="input" placeholder="请输入" value="{{sellingPoint}}" data-field="sellingPoint" bindinput="onInput" />
-    </view>
-    <view class="form-item">
-      <text class="label">活动优惠</text>
-      <input class="input" placeholder="请输入" value="{{promotion}}" data-field="promotion" bindinput="onInput" />
-    </view>
-    <view class="button-group">
-      <my-button bindtap="generateSaleText">生成卖货文案</my-button>
-      <my-button bindtap="generatePersonaText">生成人设文案</my-button>
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">爆款短视频文案创作</text>
+    <text class="page-desc">选择文案类型，生成专业文案</text>
+  </view>
+
+  <!-- 文案类型选择 -->
+  <view class="section">
+    <view class="section-title">选择文案类型</view>
+    <view class="type-list">
+      <view 
+        class="type-item {{selectedType === item.id ? 'selected' : ''}}"
+        wx:for="{{contentTypes}}"
+        wx:key="id"
+        data-type="{{item.id}}"
+        bindtap="selectContentType"
+      >
+        <text class="type-name">{{item.name}}</text>
+        <view class="type-check" wx:if="{{selectedType === item.id}}">
+          <text class="check-icon">✓</text>
+        </view>
+      </view>
     </view>
   </view>
-  <view class="output-title">以下是帮您生成的文案</view>
-  <view class="output-box">{{outputText}}</view>
-  <my-button type="primary" bindtap="copyText">复制文案</my-button>
+
+  <!-- 产品推广 - 商品选择 -->
+  <view class="section" wx:if="{{selectedType === 'product'}}">
+    <view class="section-title">选择商品</view>
+    <view class="product-selector" wx:if="{{products.length > 0}}">
+      <view class="selector-input" bindtap="showProductSelector">
+        <text class="selector-text {{selectedProductName ? '' : 'placeholder'}}">{{selectedProductName || '请选择商品'}}</text>
+        <text class="selector-arrow">></text>
+      </view>
+    </view>
+    <view class="empty-tip" wx:else>
+      <text>暂无商品，请先到产品管理添加商品</text>
+    </view>
+  </view>
+
+  <!-- 产品推广 - 产品信息 -->
+  <view class="section" wx:if="{{selectedType === 'product'}}">
+    <view class="section-title">产品信息</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请输入产品的详细信息，如：产品特色、卖点、使用场景等"
+      value="{{productInfo}}"
+      bindinput="onProductInfoInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+  <!-- 店内活动宣传 - 活动优惠政策 -->
+  <view class="section" wx:if="{{selectedType === 'activity'}}">
+    <view class="section-title">活动优惠政策</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请输入活动优惠政策，如：全场8折、买二送一等"
+      value="{{activityPolicy}}"
+      bindinput="onActivityPolicyInput"
+      maxlength="200"
+    ></textarea>
+  </view>
+
+  <!-- 店内活动宣传 - 店铺信息 -->
+  <view class="section" wx:if="{{selectedType === 'activity'}}">
+    <view class="section-title">门店信息</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请输入门店信息，如：门店名称、装修风格、经营特色、服务理念等"
+      value="{{shopInfo}}"
+      bindinput="onShopInfoInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+  <!-- 人设打造 - 老板信息 -->
+  <view class="section" wx:if="{{selectedType === 'persona'}}">
+    <view class="section-title">老板信息</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请输入老板信息，如：个人经历、创业故事、经营理念、性格特点等"
+      value="{{bossInfo}}"
+      bindinput="onBossInfoInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+  <!-- 人设打造 - 门店信息 -->
+  <view class="section" wx:if="{{selectedType === 'persona'}}">
+    <view class="section-title">门店信息</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请输入门店信息，如：门店名称、装修风格、经营特色、服务理念等"
+      value="{{shopInfo}}"
+      bindinput="onShopInfoInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+  <!-- 用户需求输入 -->
+  <view class="section" wx:if="{{selectedType}}">
+    <view class="section-title">用户需求</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请详细描述您的需求，如：突出产品特色、吸引年轻用户、营造温馨氛围等"
+      value="{{userRequirement}}"
+      bindinput="onUserRequirementInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-section" wx:if="{{selectedType}}">
+    <button 
+      class="submit-btn {{loading ? 'loading' : ''}}"
+      bindtap="submitGenerate"
+      disabled="{{loading}}"
+    >
+      {{loading ? '生成中...' : '生成文案'}}
+    </button>
+  </view>
+
+  <!-- 商品选择弹窗 -->
+  <view class="product-picker-mask" wx:if="{{showProductPicker}}" bindtap="closeProductPicker">
+    <view class="product-picker" catchtap="">
+      <view class="picker-header">
+        <text class="picker-title">选择商品</text>
+        <text class="picker-close" bindtap="closeProductPicker">×</text>
+      </view>
+      <scroll-view class="picker-content" scroll-y>
+        <view 
+          class="picker-item {{selectedProduct === item._id ? 'selected' : ''}}"
+          wx:for="{{products}}"
+          wx:key="_id"
+          data-product-id="{{item._id}}"
+          data-product-name="{{item.name}}"
+          bindtap="selectProduct"
+        >
+          <view class="picker-item-info">
+            <text class="picker-item-name">{{item.name}}</text>
+            <text class="picker-item-desc">{{item.description}}</text>
+          </view>
+          <view class="picker-item-check" wx:if="{{selectedProduct === item._id}}">
+            <text class="check-icon">✓</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 生成结果 -->
+  <view class="result-section" wx:if="{{outputText}}">
+    <view class="section-title">生成的文案</view>
+    <view class="result-content">
+      <text class="result-text">{{outputText}}</text>
+    </view>
+    <button class="copy-btn" bindtap="copyText">
+      复制文案
+    </button>
+  </view>
 </view>
