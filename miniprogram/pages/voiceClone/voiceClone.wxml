@@ -13,7 +13,7 @@
     
     <view class="voice-items">
       <view 
-        class="voice-item {{selectedVoiceId === item.id ? 'selected' : ''}}"
+        class="voice-item {{selectedVoiceId === item.id ? 'selected' : ''}} {{item.isCloned ? 'cloned-voice' : ''}}"
         wx:for="{{voiceList}}"
         wx:key="id"
         data-voice-id="{{item.id}}"
@@ -22,7 +22,10 @@
         <view class="voice-info">
           <image class="voice-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
           <view class="voice-details">
-            <text class="voice-name">{{item.name}}</text>
+            <view class="voice-name-wrapper">
+              <text class="voice-name">{{item.name}}</text>
+              <text class="cloned-badge" wx:if="{{item.isCloned}}">我的</text>
+            </view>
             <text class="voice-desc">{{item.description}}</text>
           </view>
         </view>
@@ -41,10 +44,23 @@
     </view>
   </view>
 
+  <!-- 声音克隆进度提示 -->
+  <view class="clone-progress" wx:if="{{isPolling}}">
+    <view class="progress-content">
+      <view class="progress-icon">
+        <text class="loading-icon">🎵</text>
+      </view>
+      <view class="progress-text">
+        <text class="progress-title">声音克隆中...</text>
+        <text class="progress-desc">请耐心等待，这可能需要几分钟时间</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 克隆我的声音按钮 -->
   <view class="clone-section">
-    <button class="clone-btn" bindtap="showCloneModal">
-      <text class="clone-btn-text">克隆我的声音</text>
+    <button class="clone-btn" bindtap="showCloneModal" disabled="{{isPolling}}">
+      <text class="clone-btn-text">{{isPolling ? '克隆中...' : '克隆我的声音'}}</text>
     </button>
   </view>
 

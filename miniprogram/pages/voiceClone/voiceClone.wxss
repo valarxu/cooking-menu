@@ -85,12 +85,31 @@
   flex: 1;
 }
 
+.voice-name-wrapper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
 .voice-name {
   font-size: 32rpx;
   font-weight: bold;
   color: #333;
-  display: block;
-  margin-bottom: 8rpx;
+  margin-right: 10rpx;
+}
+
+.cloned-badge {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  font-size: 20rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 8rpx;
+  font-weight: bold;
+}
+
+.cloned-voice {
+  border-left: 6rpx solid #ff6b6b;
+  background: linear-gradient(90deg, rgba(255, 107, 107, 0.05) 0%, transparent 100%);
 }
 
 .voice-desc {
@@ -121,6 +140,56 @@
   font-weight: bold;
 }
 
+/* 声音克隆进度提示 */
+.clone-progress {
+  margin: 30rpx 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  color: white;
+}
+
+.progress-content {
+  display: flex;
+  align-items: center;
+}
+
+.progress-icon {
+  margin-right: 20rpx;
+}
+
+.loading-icon {
+  font-size: 48rpx;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+.progress-text {
+  flex: 1;
+}
+
+.progress-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.progress-desc {
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+
 /* 克隆按钮 */
 .clone-section {
   padding: 40rpx 0;
@@ -136,6 +205,13 @@
   font-size: 32rpx;
   font-weight: bold;
   box-shadow: 0 10rpx 30rpx rgba(255, 107, 107, 0.3);
+  transition: all 0.3s ease;
+}
+
+.clone-btn[disabled] {
+  background: linear-gradient(135deg, #ccc 0%, #999 100%);
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 .clone-btn-text {
