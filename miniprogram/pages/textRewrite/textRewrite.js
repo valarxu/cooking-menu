@@ -23,7 +23,7 @@ Page({
     wx.cloud.callFunction({
       name: 'callCozeWorkflow',
       data: {
-        workflow_id: '7509119431479607311',
+        workflow_id: '7508715967778881546',
         parameters: {
           input: this.data.inputText
         },
@@ -35,7 +35,7 @@ Page({
           const executeId = res.result.data.execute_id;
           if (executeId) {
             // 开始轮询查询结果
-            this.pollWorkflowResult('7509119431479607311', executeId);
+            this.pollWorkflowResult('7508715967778881546', executeId);
           } else {
             wx.showToast({
               title: '未获取到执行ID',
