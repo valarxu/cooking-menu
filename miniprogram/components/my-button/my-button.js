@@ -9,7 +9,7 @@ Component({
     },
     type: {
       type: String,
-      value: 'primary' // 支持primary/outline
+      value: 'primary' // 支持primary/outline/gradient
     },
     loading: {
       type: Boolean,
@@ -22,4 +22,4 @@ Component({
       this.triggerEvent('tap', e);
     }
   }
-}) 
+})

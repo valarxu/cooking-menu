@@ -112,13 +112,13 @@
 
   <!-- 提交按钮 -->
   <view class="submit-section" wx:if="{{selectedType}}">
-    <button 
-      class="submit-btn {{loading ? 'loading' : ''}}"
-      bindtap="submitGenerate"
-      disabled="{{loading}}"
+    <my-button 
+      type="gradient"
+      loading="{{loading}}"
+      bind:tap="submitGenerate"
     >
       {{loading ? '生成中...' : '生成文案'}}
-    </button>
+    </my-button>
   </view>
 
   <!-- 商品选择弹窗 -->
