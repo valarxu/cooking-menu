@@ -1,0 +1,121 @@
+<view class="container">
+  <!-- 上传区域 -->
+  <view class="upload-section">
+    <view class="section-title">上传视频</view>
+    <view class="upload-area">
+      <block wx:if="{{!videoFile}}">
+        <view class="choose-btn" bindtap="chooseVideo">
+          <text class="upload-icon">📹</text>
+          <text class="upload-text">点击上传视频</text>
+          <text class="upload-tip">支持MP4格式，最大50M</text>
+        </view>
+      </block>
+      <block wx:else>
+        <video class="video-preview" src="{{videoFile.tempFilePath}}" controls></video>
+        <view class="video-actions">
+          <my-button class="action-btn" type="outline" bindtap="reChooseVideo">重新选择</my-button>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 文案输入区域 -->
+  <view class="text-section">
+    <view class="section-title">输入文案内容</view>
+    <textarea 
+      class="text-input" 
+      placeholder="请输入要合成的文案内容..." 
+      value="{{textContent}}"
+      bindinput="onTextInput"
+      maxlength="500"
+      show-confirm-bar="{{false}}"
+    ></textarea>
+    <view class="text-count">{{textContent.length}}/500</view>
+  </view>
+
+  <!-- 生成按钮 -->
+  <view class="generate-section">
+    <my-button 
+      class="generate-btn" 
+      type="primary" 
+      loading="{{isGenerating}}"
+      disabled="{{isGenerating || !videoFile || !textContent.trim()}}"
+      bindtap="submitDigitalHuman"
+    >
+      {{isGenerating ? '生成中...' : '生成数字人视频'}}
+    </my-button>
+    
+    <!-- 生成状态提示 -->
+    <view class="status-tip" wx:if="{{isGenerating}}">
+      <block wx:if="{{taskStatus === 'generating_audio'}}">
+        <text class="status-text">🎵 正在生成音频...</text>
+      </block>
+      <block wx:elif="{{taskStatus === 'generating_video'}}">
+        <text class="status-text">🎬 正在合成视频...</text>
+      </block>
+    </view>
+  </view>
+
+  <!-- 历史记录 -->
+  <view class="history-section">
+    <view class="section-title">我的数字人视频</view>
+    
+    <block wx:if="{{digitalHumanList.length > 0}}">
+      <view class="video-list">
+        <view class="video-item" wx:for="{{digitalHumanList}}" wx:key="_id">
+          <view class="video-info">
+            <view class="video-content">
+              <text class="video-text">{{item.textContent}}</text>
+            </view>
+            <view class="video-meta">
+              <text class="create-time">{{item.createTime}}</text>
+              <view class="status-badge status-{{item.status}}">
+                <block wx:if="{{item.status === 'generating_audio'}}">
+                  <text>生成音频中</text>
+                </block>
+                <block wx:elif="{{item.status === 'generating_video'}}">
+                  <text>合成视频中</text>
+                </block>
+                <block wx:elif="{{item.status === 'completed'}}">
+                  <text>已完成</text>
+                </block>
+                <block wx:elif="{{item.status === 'failed'}}">
+                  <text>生成失败</text>
+                </block>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 视频预览 -->
+          <view class="video-preview-container">
+            <block wx:if="{{item.status === 'completed' && item.finalVideoUrl}}">
+              <video 
+                class="result-video" 
+                src="{{item.finalVideoUrl}}" 
+                controls
+                data-url="{{item.finalVideoUrl}}"
+                bindtap="previewVideo"
+              ></video>
+            </block>
+            <block wx:elif="{{item.status === 'generating_audio' || item.status === 'generating_video'}}">
+              <view class="loading-placeholder">
+                <text class="loading-text">生成中...</text>
+              </view>
+            </block>
+            <block wx:elif="{{item.status === 'failed'}}">
+              <view class="error-placeholder">
+                <text class="error-text">生成失败</text>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </block>
+    
+    <view class="empty-tip" wx:else>
+      <text class="empty-icon">🎭</text>
+      <text class="empty-text">暂无数字人视频</text>
+      <text class="empty-desc">上传视频和文案，生成专属数字人视频</text>
+    </view>
+  </view>
+</view>

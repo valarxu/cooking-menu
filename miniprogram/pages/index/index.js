@@ -146,5 +146,12 @@ Page({
     wx.navigateTo({
       url: '/pages/voiceClone/voiceClone'
     })
+  },
+
+  // 跳转到我的数字人
+  goToDigitalHuman() {
+    wx.navigateTo({
+      url: '/pages/digitalHuman/digitalHuman'
+    })
   }
 })

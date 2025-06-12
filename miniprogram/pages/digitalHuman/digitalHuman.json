@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "我的数字人",
+  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#f5f5f5",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "my-button": "/components/my-button/my-button"
+  }
+}

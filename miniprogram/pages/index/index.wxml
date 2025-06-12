@@ -6,7 +6,7 @@
 
   <!-- 功能入口卡片 -->
   <view class="function-cards">
-    <view class="card large-card">
+    <view class="card large-card" bindtap="goToDigitalHuman">
       <!-- 我的数字人 -->
       <image class="card-bg" src="{{digitalHumanBgUrl}}" mode="aspectFill"></image>
       <view class="card-content">
