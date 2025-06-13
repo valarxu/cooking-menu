@@ -419,6 +419,10 @@ Page({
           }
         )
 
+        // 5.1 更新数据库记录，保存合成音频URL
+        await this.updateVoiceCloneRecordWithSynthesizedAudio(speaker, synthesizeResult)
+        console.log('数据库记录已更新，合成音频URL:', synthesizeResult)
+
         // 6. 添加到声音列表（包含合成的音频URL）
         this.addClonedVoiceToList({
           speaker: speaker,
@@ -554,7 +558,7 @@ Page({
   },
 
   // 保存声音克隆记录到数据库
-  saveVoiceCloneRecord(audioFileID, speaker, audioUrl) {
+  saveVoiceCloneRecord(audioFileID, speaker, audioUrl, synthesizedAudioUrl = null) {
     return new Promise((resolve, reject) => {
       const db = wx.cloud.database()
 
@@ -564,6 +568,7 @@ Page({
           audio_file_id: audioFileID,
           speaker: speaker,
           audio_url: audioUrl,
+          synthesized_audio_url: synthesizedAudioUrl, // 新增合成音频URL字段
           reference_text: this.data.defaultText,
           status: 'success',
           created_at: new Date(),
@@ -572,6 +577,28 @@ Page({
         success: resolve,
         fail: reject
       })
+    })
+  },
+
+  // 更新声音克隆记录的合成音频URL
+  updateVoiceCloneRecordWithSynthesizedAudio(speaker, synthesizedAudioUrl) {
+    return new Promise((resolve, reject) => {
+      const db = wx.cloud.database()
+
+      db.collection('voice_clone_records')
+        .where({
+          user_id: app.globalData.userInfo._openid,
+          speaker: speaker,
+          status: 'success'
+        })
+        .update({
+          data: {
+            synthesized_audio_url: synthesizedAudioUrl,
+            updated_at: new Date()
+          },
+          success: resolve,
+          fail: reject
+        })
     })
   },
 
@@ -637,11 +664,21 @@ Page({
 
       if (res.data.length > 0) {
         const record = res.data[0];
+        console.log('从数据库加载克隆声音记录:', record);
+        
         this.addClonedVoiceToList({
           speaker: record.speaker,
           audioUrl: record.audio_url,
-          referenceText: record.reference_text
+          referenceText: record.reference_text,
+          synthesizedAudioUrl: record.synthesized_audio_url // 从数据库加载合成音频URL
         });
+        
+        // 验证加载的音频URL
+        if (record.synthesized_audio_url) {
+          console.log('✓ 从数据库加载到合成音频URL:', record.synthesized_audio_url);
+        } else {
+          console.log('⚠ 数据库中未找到合成音频URL，将使用原始训练音频');
+        }
       }
     } catch (error) {
       console.error('加载用户克隆声音失败：', error);
@@ -680,53 +717,6 @@ Page({
         title: error.message || '合成失败',
         icon: 'none'
       })
-      throw error
-    }
-  },
-
-  // 保存音频到云存储
-  async saveAudioToCloud(audioUrl) {
-    try {
-      // 如果audioUrl是本地Docker服务返回的音频数据，需要先保存为临时文件
-      if (typeof audioUrl === 'string' && audioUrl.startsWith('data:')) {
-        // 处理base64音频数据
-        const base64Data = audioUrl.split(',')[1]
-        const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_synthesized_${Date.now()}.mp3`
-
-        // 将base64数据写入临时文件
-        const fs = wx.getFileSystemManager()
-        fs.writeFileSync(tempFilePath, base64Data, 'base64')
-
-        // 上传到云存储
-        const fileName = `synthesized_audio_${Date.now()}.mp3`
-        const uploadResult = await new Promise((resolve, reject) => {
-          wx.cloud.uploadFile({
-            cloudPath: `synthesized_audio/${fileName}`,
-            filePath: tempFilePath,
-            success: resolve,
-            fail: reject
-          })
-        })
-
-        // 删除临时文件
-        try {
-          fs.unlinkSync(tempFilePath)
-        } catch (e) {
-          console.log('删除临时文件失败：', e)
-        }
-
-        // 获取云存储文件的临时URL
-        const tempUrlResult = await wx.cloud.getTempFileURL({
-          fileList: [uploadResult.fileID]
-        })
-
-        return tempUrlResult.fileList[0].tempFileURL
-      } else {
-        // 如果是URL，直接返回
-        return audioUrl
-      }
-    } catch (error) {
-      console.error('保存音频到云存储失败：', error)
       throw error
     }
   },
