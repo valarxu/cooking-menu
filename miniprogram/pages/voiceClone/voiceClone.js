@@ -14,7 +14,7 @@ Page({
         sampleUrl: 'https://lf-bot-studio-plugin-resource.coze.cn/obj/bot-studio-platform-plugin-tos/artist/image/39b6bdb4d11b4f46b9ae25534cc2ea44.mp3'
       },
       {
-        id: 'voice_2', 
+        id: 'voice_2',
         name: '磁性男声',
         description: '低沉磁性的男性声音，适合专业场景',
         avatar: '/images/avatar/male1.svg',
@@ -37,10 +37,10 @@ Page({
     ],
     selectedVoiceId: '',
     playingVoiceId: '',
-    
+
     // 弹窗相关
     showModal: false,
-    
+
     // 录音相关
     isRecording: false,
     recordStatus: '准备录制',
@@ -49,14 +49,10 @@ Page({
     isPlayingRecord: false,
     isSubmitting: false,
     defaultText: '你好呀，我是你的数字人，以后由我来帮你宣传产品吧',
-    
+    referenceText: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!',
+
     // 定时器
-    recordTimer: null,
-    
-    // 工作流轮询相关
-    isPolling: false,
-    currentExecuteId: '',
-    currentWorkflowId: ''
+    recordTimer: null
   },
 
   onLoad() {
@@ -75,6 +71,10 @@ Page({
     if (this.data.recordTimer) {
       clearInterval(this.data.recordTimer)
     }
+    if (this.tempAudioContext) {
+      this.tempAudioContext.destroy()
+      this.tempAudioContext = null
+    }
     innerAudioContext.destroy()
   },
 
@@ -86,26 +86,44 @@ Page({
         recordStatus: '正在录制...',
         recordTime: 0
       })
-      
+
       // 开始计时
       const timer = setInterval(() => {
         this.setData({
           recordTime: this.data.recordTime + 1
         })
       }, 1000)
-      
+
       this.setData({ recordTimer: timer })
     })
 
     recorderManager.onStop((res) => {
       console.log('录音结束', res)
-      
+      console.log('文件大小：', res.fileSize)
+      console.log('录音时长：', res.duration)
+      console.log('临时文件路径：', res.tempFilePath)
+
+      // 检查文件是否存在
+      wx.getFileInfo({
+        filePath: res.tempFilePath,
+        success: (fileInfo) => {
+          console.log('文件信息：', fileInfo)
+        },
+        fail: (err) => {
+          console.error('获取文件信息失败：', err)
+          wx.showToast({
+            title: '录音文件异常',
+            icon: 'none'
+          })
+        }
+      })
+
       // 清除计时器
       if (this.data.recordTimer) {
         clearInterval(this.data.recordTimer)
         this.setData({ recordTimer: null })
       }
-      
+
       this.setData({
         recordStatus: '录制完成',
         recordedAudioPath: res.tempFilePath,
@@ -115,18 +133,18 @@ Page({
 
     recorderManager.onError((err) => {
       console.error('录音错误', err)
-      
+
       // 清除计时器
       if (this.data.recordTimer) {
         clearInterval(this.data.recordTimer)
         this.setData({ recordTimer: null })
       }
-      
+
       this.setData({
         recordStatus: '录制失败',
         isRecording: false
       })
-      
+
       wx.showToast({
         title: '录音失败，请重试',
         icon: 'none'
@@ -137,6 +155,7 @@ Page({
   // 初始化音频上下文
   initAudioContext() {
     innerAudioContext.onEnded(() => {
+      console.log('音频播放结束')
       this.setData({
         playingVoiceId: '',
         isPlayingRecord: false
@@ -145,10 +164,26 @@ Page({
 
     innerAudioContext.onError((err) => {
       console.error('音频播放错误', err)
+      wx.showToast({
+        title: '音频播放失败',
+        icon: 'none'
+      })
       this.setData({
         playingVoiceId: '',
         isPlayingRecord: false
       })
+    })
+
+    innerAudioContext.onWaiting(() => {
+      console.log('音频加载中...')
+    })
+
+    innerAudioContext.onCanplay(() => {
+      console.log('音频可以播放')
+    })
+
+    innerAudioContext.onPlay(() => {
+      console.log('音频开始播放')
     })
   },
 
@@ -164,7 +199,7 @@ Page({
   playVoiceSample(e) {
     const voiceId = e.currentTarget.dataset.voiceId
     const audioUrl = e.currentTarget.dataset.audioUrl
-    
+
     if (this.data.playingVoiceId === voiceId) {
       // 暂停播放
       innerAudioContext.pause()
@@ -195,10 +230,10 @@ Page({
     if (this.data.isRecording) {
       recorderManager.stop()
     }
-    
+
     // 停止播放
     innerAudioContext.stop()
-    
+
     this.setData({
       showModal: false,
       playingVoiceId: '',
@@ -240,13 +275,13 @@ Page({
   // 执行录音
   doStartRecord() {
     this.setData({ isRecording: true })
-    
+
     recorderManager.start({
       duration: 60000, // 最长60秒
-      sampleRate: 16000,
+      sampleRate: 44100, // 提高采样率
       numberOfChannels: 1,
-      encodeBitRate: 96000,
-      format: 'mp3'
+      encodeBitRate: 192000, // 提高比特率
+      format: 'mp3' // 使用MP3格式
     })
   },
 
@@ -259,15 +294,84 @@ Page({
 
   // 播放录制的音频
   playRecordedAudio() {
-    if (!this.data.recordedAudioPath) return
-    
+    console.log('播放录制音频，路径：', this.data.recordedAudioPath)
+
+    if (!this.data.recordedAudioPath) {
+      console.log('没有录制音频路径')
+      wx.showToast({
+        title: '请先录制音频',
+        icon: 'none'
+      })
+      return
+    }
+
     if (this.data.isPlayingRecord) {
-      innerAudioContext.pause()
+      console.log('暂停播放音频')
+      if (this.tempAudioContext) {
+        this.tempAudioContext.pause()
+        this.tempAudioContext.destroy()
+        this.tempAudioContext = null
+      } else {
+        innerAudioContext.pause()
+      }
       this.setData({ isPlayingRecord: false })
     } else {
-      innerAudioContext.src = this.data.recordedAudioPath
-      innerAudioContext.play()
-      this.setData({ isPlayingRecord: true })
+      console.log('开始播放音频')
+
+      // 先检查文件是否存在
+      wx.getFileInfo({
+        filePath: this.data.recordedAudioPath,
+        success: (fileInfo) => {
+          console.log('播放文件信息：', fileInfo)
+
+          // 重新创建音频上下文实例来避免缓存问题
+          const tempAudioContext = wx.createInnerAudioContext()
+
+          tempAudioContext.onCanplay(() => {
+            console.log('临时音频上下文：音频可以播放')
+          })
+
+          tempAudioContext.onPlay(() => {
+            console.log('临时音频上下文：音频开始播放')
+            this.setData({ isPlayingRecord: true })
+          })
+
+          tempAudioContext.onEnded(() => {
+            console.log('临时音频上下文：音频播放结束')
+            this.setData({ isPlayingRecord: false })
+            tempAudioContext.destroy()
+          })
+
+          tempAudioContext.onError((err) => {
+            console.error('临时音频上下文播放错误：', err)
+            wx.showToast({
+              title: '音频播放失败',
+              icon: 'none'
+            })
+            this.setData({ isPlayingRecord: false })
+            tempAudioContext.destroy()
+          })
+
+          tempAudioContext.onWaiting(() => {
+            console.log('临时音频上下文：音频加载中...')
+          })
+
+          // 设置音频源并播放
+          tempAudioContext.src = this.data.recordedAudioPath
+          console.log('设置音频源完成，准备播放')
+          tempAudioContext.play()
+
+          // 保存临时音频上下文引用以便控制
+          this.tempAudioContext = tempAudioContext
+        },
+        fail: (err) => {
+          console.error('播放文件不存在：', err)
+          wx.showToast({
+            title: '音频文件不存在',
+            icon: 'none'
+          })
+        }
+      })
     }
   },
 
@@ -286,43 +390,56 @@ Page({
     try {
       // 1. 上传音频文件到云存储
       wx.showLoading({ title: '上传音频中...' })
-      
-      const uploadResult = await this.uploadAudioToCloud()
-      
-      // 2. 调用云函数处理声音克隆
-      wx.showLoading({ title: '启动声音克隆...' })
 
+      const uploadResult = await this.uploadAudioToCloud()
+
+      // 2. 获取音频文件的临时URL
       const voiceRes = await wx.cloud.getTempFileURL({ fileList: [uploadResult.fileID] });
       let voice_url = voiceRes.fileList[0].tempFileURL;
-      
-      const cloneResult = await this.callVoiceCloneWorkflow(voice_url)
-      
-      if (cloneResult.result.success && cloneResult.result.data.code === 0) {
-        const executeId = cloneResult.result.data.execute_id;
-        if (executeId) {
-          // 3. 保存到数据库（状态为processing）
-          await this.saveVoiceCloneRecord(uploadResult.fileID, cloneResult, executeId)
-          
-          // 4. 开始轮询查询结果
-          wx.showLoading({ title: '声音克隆中...' })
-          this.setData({
-            currentExecuteId: executeId,
-            currentWorkflowId: '7511718185843179560',
-            isPolling: true
-          })
-          
-          // 关闭弹窗
-          this.hideCloneModal()
-          
-          // 开始轮询
-          this.pollWorkflowResult('7511718185843179560', executeId)
-        } else {
-          throw new Error('未获取到执行ID')
-        }
+
+      // 3. 调用本地Docker服务进行声音预处理和训练
+      wx.showLoading({ title: '声音训练中...' })
+
+      const speaker = this.generateUUID();
+      const preprocessResult = await this.callPreprocessAPI(voice_url, speaker)
+
+      if (preprocessResult.success) {
+        // 4. 保存克隆记录到数据库
+        await this.saveVoiceCloneRecord(uploadResult.fileID, speaker, voice_url)
+
+        // 5. 使用训练好的音频，继续合成新音频文件
+        wx.showLoading({ title: '合成测试音频中...' })
+
+        const synthesizeResult = await this.synthesizeWithClonedVoice(
+          this.data.defaultText,
+          {
+            speaker: speaker,
+            sampleUrl: voice_url,
+            referenceText: this.data.referenceText
+          }
+        )
+
+        // 6. 添加到声音列表（包含合成的音频URL）
+        this.addClonedVoiceToList({
+          speaker: speaker,
+          audioUrl: voice_url,
+          referenceText: this.data.referenceText,
+          synthesizedAudioUrl: synthesizeResult
+        })
+
+        wx.hideLoading()
+        wx.showToast({
+          title: '声音克隆和合成完成！',
+          icon: 'success'
+        })
+
+        // 关闭弹窗
+        this.hideCloneModal()
+
       } else {
-        throw new Error(cloneResult.result.error || '启动工作流失败')
+        throw new Error(preprocessResult.error || '声音训练失败')
       }
-      
+
     } catch (error) {
       console.error('声音克隆失败', error)
       wx.hideLoading()
@@ -330,15 +447,16 @@ Page({
         title: error.message || '提交失败，请重试',
         icon: 'none'
       })
-      this.setData({ isSubmitting: false })
     }
+
+    this.setData({ isSubmitting: false })
   },
 
   // 上传音频到云存储
   uploadAudioToCloud() {
     return new Promise((resolve, reject) => {
       const fileName = `voice_clone_${Date.now()}.mp3`
-      
+
       wx.cloud.uploadFile({
         cloudPath: `voice_clone/${fileName}`,
         filePath: this.data.recordedAudioPath,
@@ -348,37 +466,106 @@ Page({
     })
   },
 
-  // 调用声音克隆工作流
-  callVoiceCloneWorkflow(voice_url) {
+  // 生成UUID
+  generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0,
+        v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  },
+
+  // 调用本地Docker服务进行声音预处理和训练
+  callPreprocessAPI(voice_url, speaker) {
     return new Promise((resolve, reject) => {
-      wx.cloud.callFunction({
-        name: 'callCozeWorkflow',
-        data: {
-          workflow_id: '7511718185843179560', // 替换为实际的工作流ID
-          parameters: {
-            voice_url: voice_url,
-            text: this.data.defaultText
-          },
-          is_async: true
+      wx.request({
+        url: 'http://127.0.0.1:18180/v1/preprocess_and_tran',
+        method: 'POST',
+        header: {
+          'content-type': 'application/json'
         },
-        success: resolve,
-        fail: reject
+        data: {
+          format: 'mp3',
+          reference_audio: voice_url,
+          lang: 'zh'
+        },
+        success: (res) => {
+          console.log('预处理API响应：', res)
+          if (res.statusCode === 200) {
+            resolve({ success: true, data: res.data })
+          } else {
+            resolve({ success: false, error: '预处理失败' })
+          }
+        },
+        fail: (error) => {
+          console.error('预处理API调用失败：', error)
+          resolve({ success: false, error: '网络请求失败' })
+        }
+      })
+    })
+  },
+
+  // 调用本地Docker服务合成音频
+  callInvokeAPI(speaker, text, referenceAudio, referenceText) {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: 'http://127.0.0.1:18180/v1/invoke',
+        method: 'POST',
+        header: {
+          'content-type': 'application/json'
+        },
+        responseType: 'arraybuffer',
+        data: {
+          speaker: speaker,
+          text: text,
+          format: 'mp3',
+          topP: 0.7,
+          max_new_tokens: 1024,
+          chunk_length: 100,
+          repetition_penalty: 1.2,
+          temperature: 0.7,
+          need_asr: false,
+          streaming: false,
+          is_fixed_seed: 0,
+          is_norm: 1,
+          reference_audio: referenceAudio,
+          reference_text: referenceText
+        },
+        success: (res) => {
+          console.log('合成API响应：', res)
+          console.log('响应状态码:', res.statusCode)
+          console.log('响应数据类型:', typeof res.data)
+          console.log('响应数据长度/大小:', res.data?.length || res.data?.byteLength || 'unknown')
+          console.log('响应头:', res.header)
+
+          if (res.statusCode === 200) {
+            // 根据实际API响应格式，直接返回音频数据
+            resolve({ success: true, audioData: res.data })
+          } else {
+            resolve({ success: false, error: '音频合成失败' })
+          }
+        },
+        fail: (error) => {
+          console.error('合成API调用失败：', error)
+          resolve({ success: false, error: '网络请求失败' })
+        }
       })
     })
   },
 
   // 保存声音克隆记录到数据库
-  saveVoiceCloneRecord(audioFileID, workflowResult, executeId) {
+  saveVoiceCloneRecord(audioFileID, speaker, audioUrl) {
     return new Promise((resolve, reject) => {
       const db = wx.cloud.database()
-      
+
       db.collection('voice_clone_records').add({
         data: {
           user_id: app.globalData.userInfo._openid || 'anonymous',
           audio_file_id: audioFileID,
-          workflow_result: workflowResult,
-          execute_id: executeId,
-          status: 'processing',
+          speaker: speaker,
+          audio_url: audioUrl,
+          reference_text: this.data.defaultText,
+          status: 'success',
           created_at: new Date(),
           updated_at: new Date()
         },
@@ -388,161 +575,46 @@ Page({
     })
   },
 
-  // 轮询查询工作流结果
-  pollWorkflowResult(workflowId, executeId, maxAttempts = 60) {
-    let attempts = 0;
-    
-    const poll = () => {
-      attempts++;
-      console.log(`第${attempts}次查询声音克隆工作流结果`);
-      
-      wx.cloud.callFunction({
-        name: 'queryCozeWorkflow',
-        data: {
-          workflow_id: workflowId,
-          execute_id: executeId
-        },
-        success: (res) => {
-          console.log('查询结果：', res);
-          if (res.result.success && res.result.data.code === 0) {
-            const status = res.result.data.data[0].execute_status;
-            
-            if (status === 'Success') {
-              // 工作流完成，处理结果
-              try {
-                const outputData = JSON.parse(res.result.data.data[0].output);
-                console.log("声音克隆输出数据: ", outputData);
-                
-                // 更新数据库记录状态
-                this.updateVoiceCloneRecord(executeId, 'success', outputData);
-                
-                // 添加到声音列表
-                this.addClonedVoiceToList(outputData);
-                
-                wx.hideLoading();
-                wx.showToast({
-                  title: '声音克隆完成！',
-                  icon: 'success'
-                });
-                
-                this.setData({ 
-                  isSubmitting: false,
-                  isPolling: false
-                });
-              } catch (error) {
-                console.error('解析声音克隆响应数据失败：', error);
-                this.handleCloneFailure('解析响应失败');
-              }
-            } else if (status === 'Fail') {
-              // 工作流失败
-              this.updateVoiceCloneRecord(executeId, 'failed', null);
-              this.handleCloneFailure('声音克隆失败');
-            } else if (status === 'Running') {
-              // 工作流还在运行，继续轮询
-              if (attempts < maxAttempts) {
-                setTimeout(poll, 3000); // 3秒后再次查询
-              } else {
-                this.handleCloneFailure('声音克隆超时，请重试');
-              }
-            } else {
-              // 未知状态
-              this.handleCloneFailure(`未知状态: ${status}`);
-            }
-          } else {
-            // 查询失败，重试
-            if (attempts < maxAttempts) {
-              setTimeout(poll, 3000);
-            } else {
-              this.handleCloneFailure('查询失败，请重试');
-            }
-          }
-        },
-        fail: (error) => {
-          console.error('查询云函数调用失败：', error);
-          // 查询失败，重试
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 3000);
-          } else {
-            this.handleCloneFailure('查询失败，请重试');
-          }
-        }
-      });
-    };
-    
-    // 开始轮询
-    poll();
-  },
 
-  // 处理克隆失败
-  handleCloneFailure(message) {
-    wx.hideLoading();
-    wx.showToast({
-      title: message,
-      icon: 'none'
-    });
-    this.setData({ 
-      isSubmitting: false,
-      isPolling: false
-    });
-  },
-
-  // 更新声音克隆记录状态
-  updateVoiceCloneRecord(executeId, status, outputData) {
-    const db = wx.cloud.database();
-    
-    db.collection('voice_clone_records')
-      .where({
-        user_id: app.globalData.userInfo._openid,
-        execute_id: executeId
-      })
-      .update({
-        data: {
-          status: status,
-          output_data: outputData,
-          updated_at: new Date()
-        }
-      })
-      .then(() => {
-        console.log('更新声音克隆记录成功');
-      })
-      .catch(err => {
-        console.error('更新声音克隆记录失败：', err);
-      });
-  },
 
   // 添加克隆的声音到列表
-  addClonedVoiceToList(outputData) {
-    // 解析输出数据，获取克隆后的声音信息
-    let clonedVoiceUrl = '';
-    try {
-      // 根据实际的输出格式解析
-      if (outputData.Output) {
-        const output = JSON.parse(outputData.Output);
-        clonedVoiceUrl = output.output || '';
-      }
-    } catch (error) {
-      console.error('解析克隆声音URL失败：', error);
-      return;
-    }
+  addClonedVoiceToList(cloneData) {
+    // 确保使用合成的音频作为试听音频
+    const sampleUrl = cloneData.synthesizedAudioUrl || cloneData.audioUrl;
     
-    if (clonedVoiceUrl) {
-      const clonedVoice = {
-         id: `cloned_${Date.now()}`,
-         name: '我的克隆声音',
-         description: '您的专属克隆声音',
-         avatar: '/images/avatar/female1.svg', // 使用现有的头像
-         sampleUrl: clonedVoiceUrl,
-         isCloned: true
-       };
-      
-      // 检查是否已存在克隆声音，如果存在则替换
-      const voiceList = this.data.voiceList.filter(voice => !voice.isCloned);
-      voiceList.push(clonedVoice);
-      
-      this.setData({
-        voiceList: voiceList,
-        selectedVoiceId: clonedVoice.id
-      });
+    console.log('添加克隆声音，使用的试听音频URL:', sampleUrl);
+    console.log('原始训练音频URL:', cloneData.audioUrl);
+    console.log('合成音频URL:', cloneData.synthesizedAudioUrl);
+    
+    const clonedVoice = {
+      id: `cloned_${Date.now()}`,
+      name: '我的克隆声音',
+      description: '您的专属克隆声音（试听为合成音频）',
+      avatar: '/images/avatar/female1.svg', // 使用现有的头像
+      sampleUrl: sampleUrl, // 优先使用合成的音频作为试听
+      isCloned: true,
+      speaker: cloneData.speaker,
+      referenceText: cloneData.referenceText,
+      originalAudioUrl: cloneData.audioUrl, // 保存原始训练音频URL
+      synthesizedAudioUrl: cloneData.synthesizedAudioUrl // 保存合成的音频URL
+    };
+
+    // 检查是否已存在克隆声音，如果存在则替换
+    const voiceList = this.data.voiceList.filter(voice => !voice.isCloned);
+    voiceList.push(clonedVoice);
+
+    this.setData({
+      voiceList: voiceList,
+      selectedVoiceId: clonedVoice.id
+    });
+
+    console.log('克隆声音已添加到列表:', clonedVoice);
+    
+    // 验证试听音频是否为合成音频
+    if (cloneData.synthesizedAudioUrl) {
+      console.log('✓ 试听音频已设置为合成音频');
+    } else {
+      console.warn('⚠ 未找到合成音频，使用原始训练音频作为试听');
     }
   },
 
@@ -551,7 +623,7 @@ Page({
     if (!app.globalData.userInfo || !app.globalData.userInfo._openid) {
       return;
     }
-    
+
     try {
       const db = wx.cloud.database();
       const res = await db.collection('voice_clone_records')
@@ -562,15 +634,178 @@ Page({
         .orderBy('created_at', 'desc')
         .limit(1)
         .get();
-      
+
       if (res.data.length > 0) {
         const record = res.data[0];
-        if (record.output_data) {
-          this.addClonedVoiceToList(record.output_data);
-        }
+        this.addClonedVoiceToList({
+          speaker: record.speaker,
+          audioUrl: record.audio_url,
+          referenceText: record.reference_text
+        });
       }
     } catch (error) {
       console.error('加载用户克隆声音失败：', error);
     }
+  },
+
+  // 使用克隆声音合成音频
+  async synthesizeWithClonedVoice(text, voiceData) {
+    try {
+      wx.showLoading({ title: '合成音频中...' })
+
+      const result = await this.callInvokeAPI(
+        voiceData.speaker,
+        text,
+        voiceData.sampleUrl,
+        voiceData.referenceText
+      )
+
+      if (result.success && result.audioData) {
+        // 将合成的音频数据保存到云存储
+        const savedAudio = await this.saveAudioDataToCloud(result.audioData)
+
+        wx.hideLoading()
+        wx.showToast({
+          title: '音频合成完成！',
+          icon: 'success'
+        })
+
+        return savedAudio
+      } else {
+        throw new Error(result.error || '音频合成失败')
+      }
+    } catch (error) {
+      wx.hideLoading()
+      wx.showToast({
+        title: error.message || '合成失败',
+        icon: 'none'
+      })
+      throw error
+    }
+  },
+
+  // 保存音频到云存储
+  async saveAudioToCloud(audioUrl) {
+    try {
+      // 如果audioUrl是本地Docker服务返回的音频数据，需要先保存为临时文件
+      if (typeof audioUrl === 'string' && audioUrl.startsWith('data:')) {
+        // 处理base64音频数据
+        const base64Data = audioUrl.split(',')[1]
+        const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_synthesized_${Date.now()}.mp3`
+
+        // 将base64数据写入临时文件
+        const fs = wx.getFileSystemManager()
+        fs.writeFileSync(tempFilePath, base64Data, 'base64')
+
+        // 上传到云存储
+        const fileName = `synthesized_audio_${Date.now()}.mp3`
+        const uploadResult = await new Promise((resolve, reject) => {
+          wx.cloud.uploadFile({
+            cloudPath: `synthesized_audio/${fileName}`,
+            filePath: tempFilePath,
+            success: resolve,
+            fail: reject
+          })
+        })
+
+        // 删除临时文件
+        try {
+          fs.unlinkSync(tempFilePath)
+        } catch (e) {
+          console.log('删除临时文件失败：', e)
+        }
+
+        // 获取云存储文件的临时URL
+        const tempUrlResult = await wx.cloud.getTempFileURL({
+          fileList: [uploadResult.fileID]
+        })
+
+        return tempUrlResult.fileList[0].tempFileURL
+      } else {
+        // 如果是URL，直接返回
+        return audioUrl
+      }
+    } catch (error) {
+      console.error('保存音频到云存储失败：', error)
+      throw error
+    }
+  },
+
+  // 保存音频数据到云存储
+  saveAudioDataToCloud: function (audioData) {
+    return new Promise((resolve, reject) => {
+      try {
+        // 生成临时文件名
+        const tempFileName = `synthesized_audio_${Date.now()}.mp3`;
+        const tempFilePath = `${wx.env.USER_DATA_PATH}/${tempFileName}`;
+
+        // 写入临时文件
+        wx.getFileSystemManager().writeFile({
+          filePath: tempFilePath,
+          data: audioData,
+          encoding: 'binary',
+          success: () => {
+            console.log('临时文件写入成功:', tempFilePath);
+
+            // 检查文件大小
+            wx.getFileSystemManager().stat({
+              path: tempFilePath,
+              success: (statRes) => {
+                console.log('临时文件大小:', statRes.size, '字节');
+              },
+              fail: (err) => {
+                console.warn('无法获取文件大小:', err);
+              }
+            });
+
+            // 上传到云存储
+            wx.cloud.uploadFile({
+              cloudPath: `synthesized_audio/${tempFileName}`,
+              filePath: tempFilePath,
+              success: (uploadResult) => {
+                console.log('音频上传成功:', uploadResult.fileID);
+
+                // 删除临时文件
+                wx.getFileSystemManager().unlink({
+                  filePath: tempFilePath,
+                  success: () => console.log('临时文件删除成功'),
+                  fail: (err) => console.warn('临时文件删除失败:', err)
+                });
+
+                // 获取临时下载链接
+                wx.cloud.getTempFileURL({
+                  fileList: [uploadResult.fileID],
+                  success: (tempUrlResult) => {
+                    if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
+                      resolve(tempUrlResult.fileList[0].tempFileURL);
+                    } else {
+                      reject(new Error('获取临时URL失败'));
+                    }
+                  },
+                  fail: reject
+                });
+              },
+              fail: (error) => {
+                console.error('音频上传失败:', error);
+                // 删除临时文件
+                wx.getFileSystemManager().unlink({
+                  filePath: tempFilePath,
+                  success: () => console.log('临时文件删除成功'),
+                  fail: (err) => console.warn('临时文件删除失败:', err)
+                });
+                reject(error);
+              }
+            });
+          },
+          fail: (error) => {
+            console.error('临时文件写入失败:', error);
+            reject(error);
+          }
+        });
+      } catch (error) {
+        console.error('处理音频数据时出错:', error);
+        reject(error);
+      }
+    });
   }
 })
