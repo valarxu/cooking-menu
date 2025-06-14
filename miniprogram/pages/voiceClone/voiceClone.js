@@ -569,7 +569,7 @@ Page({
           speaker: speaker,
           audio_url: audioUrl,
           synthesized_audio_url: synthesizedAudioUrl, // 新增合成音频URL字段
-          reference_text: this.data.defaultText,
+          reference_text: this.data.referenceText,
           status: 'success',
           created_at: new Date(),
           updated_at: new Date()
