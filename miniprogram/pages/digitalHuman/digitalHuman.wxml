@@ -1,6 +1,17 @@
-<view class="container">
+<view class="container" wx:if="{{hasUserInfo}}">
+  <!-- 声音克隆状态检查 -->
+  <view class="voice-clone-section" wx:if="{{!hasClonedVoice}}">
+    <view class="voice-clone-tip">
+      <text class="tip-icon">🎤</text>
+      <text class="tip-text">您还未克隆声音，请先完成声音克隆</text>
+    </view>
+    <my-button class="clone-voice-btn" type="primary" bindtap="goToVoiceClone">
+      去克隆声音
+    </my-button>
+  </view>
+
   <!-- 上传区域 -->
-  <view class="upload-section">
+  <view class="upload-section" wx:if="{{hasClonedVoice}}">
     <view class="section-title">上传视频</view>
     <view class="upload-area">
       <block wx:if="{{!videoFile}}">
@@ -20,7 +31,7 @@
   </view>
 
   <!-- 文案输入区域 -->
-  <view class="text-section">
+  <view class="text-section" wx:if="{{hasClonedVoice}}">
     <view class="section-title">输入文案内容</view>
     <textarea 
       class="text-input" 
@@ -34,7 +45,7 @@
   </view>
 
   <!-- 生成按钮 -->
-  <view class="generate-section">
+  <view class="generate-section" wx:if="{{hasClonedVoice}}">
     <my-button 
       class="generate-btn" 
       type="primary" 

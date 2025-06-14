@@ -12,6 +12,39 @@
   margin-bottom: 20rpx;
 }
 
+/* 声音克隆状态区域 */
+.voice-clone-section {
+  margin-bottom: 40rpx;
+  background: white;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.voice-clone-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.tip-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.tip-text {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.clone-voice-btn {
+  width: 300rpx;
+  margin: 0 auto;
+}
+
 /* 上传区域 */
 .upload-section {
   margin-bottom: 40rpx;

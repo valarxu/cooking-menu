@@ -8,6 +8,8 @@ Page({
     isGenerating: false,
     digitalHumanList: [],
     hasUserInfo: false,
+    hasClonedVoice: false,
+    voiceCloneRecord: null,
     currentTaskId: '',
     taskStatus: 'idle' // idle, generating_audio, generating_video, completed, failed
   },
@@ -27,6 +29,7 @@ Page({
       this.setData({
         hasUserInfo: true
       })
+      this.checkVoiceCloneStatus()
       this.getDigitalHumanList()
     } else {
       wx.showToast({
@@ -42,6 +45,48 @@ Page({
         }
       })
     }
+  },
+
+  // 检查用户是否已克隆声音
+  async checkVoiceCloneStatus() {
+    try {
+      const db = wx.cloud.database()
+      const res = await db.collection('voice_clone_records')
+        .where({
+          user_id: app.globalData.userInfo._openid,
+          status: 'success'
+        })
+        .orderBy('created_at', 'desc')
+        .limit(1)
+        .get()
+
+      if (res.data.length > 0) {
+        console.log('用户已克隆声音:', res.data[0])
+        this.setData({
+          hasClonedVoice: true,
+          voiceCloneRecord: res.data[0]
+        })
+      } else {
+        console.log('用户未克隆声音')
+        this.setData({
+          hasClonedVoice: false,
+          voiceCloneRecord: null
+        })
+      }
+    } catch (error) {
+      console.error('检查声音克隆状态失败:', error)
+      this.setData({
+        hasClonedVoice: false,
+        voiceCloneRecord: null
+      })
+    }
+  },
+
+  // 跳转到声音克隆页面
+  goToVoiceClone() {
+    wx.navigateTo({
+      url: '/pages/voiceClone/voiceClone'
+    })
   },
 
   // 选择视频
@@ -93,6 +138,14 @@ Page({
       return
     }
 
+    if (!this.data.hasClonedVoice) {
+      wx.showToast({
+        title: '请先克隆您的声音',
+        icon: 'none'
+      })
+      return
+    }
+
     this.setData({
       isGenerating: true,
       taskStatus: 'generating_audio'
@@ -101,13 +154,13 @@ Page({
     try {
       // 1. 上传视频到云存储
       const videoUrl = await this.uploadVideoToCloud()
-      
+
       // 2. 保存初始记录到数据库
       const taskId = await this.saveInitialRecord(videoUrl)
-      
+
       // 3. 生成音频
-      await this.generateAudio(taskId)
-      
+      await this.generateAudio(taskId, videoUrl)
+
     } catch (error) {
       console.error('生成数字人视频失败:', error)
       wx.showToast({
@@ -125,7 +178,7 @@ Page({
   uploadVideoToCloud() {
     return new Promise((resolve, reject) => {
       const fileName = `digital_human_videos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`
-      
+
       wx.cloud.uploadFile({
         cloudPath: fileName,
         filePath: this.data.videoFile.tempFilePath,
@@ -145,7 +198,7 @@ Page({
   async saveInitialRecord(videoUrl) {
     const db = wx.cloud.database()
     const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
+
     try {
       await db.collection('digital_humans').add({
         data: {
@@ -154,14 +207,13 @@ Page({
           textContent: this.data.textContent,
           status: 'generating_audio',
           createTime: new Date(),
-          _openid: app.globalData.userInfo._openid
         }
       })
-      
+
       this.setData({
         currentTaskId: taskId
       })
-      
+
       return taskId
     } catch (error) {
       console.error('保存初始记录失败:', error)
@@ -170,29 +222,20 @@ Page({
   },
 
   // 生成音频
-  async generateAudio(taskId) {
+  async generateAudio(taskId, videoUrl) {
     try {
-      // 获取上传视频的云存储记录
-      const db = wx.cloud.database()
-      const videoRecord = await db.collection('digital_humans')
-        .where({
-          taskId: taskId,
-          _openid: app.globalData.userInfo._openid
-        })
-        .get()
-      
-      if (!videoRecord.data || videoRecord.data.length === 0) {
-        throw new Error('找不到视频记录')
-      }
-      
-      const videoUrl = videoRecord.data[0].videoUrl
-      
+      wx.showLoading({ title: '生成音频中...' })
+
       // 获取视频的临时URL
       const videoTempUrl = await this.getTempFileURL(videoUrl)
-      
-      // 调用heygem服务生成音频
-      const audioResult = await this.callHeygemAudioAPI({
-        speaker: taskId,
+
+      // 获取克隆声音记录中的参考音频URL
+      const referenceAudioUrl = this.data.voiceCloneRecord.audio_url;
+      const speaker = this.generateUUID();
+
+      // 调用本地Docker服务生成音频
+      const audioResult = await this.callLocalInvokeAPI({
+        speaker: speaker,
         text: this.data.textContent,
         format: 'wav',
         topP: 0.7,
@@ -203,32 +246,105 @@ Page({
         need_asr: false,
         streaming: false,
         is_fixed_seed: 0,
-        is_norm: 0,
-        reference_audio: '', // 这里需要根据实际情况填写
-        reference_text: '' // 这里需要根据实际情况填写
+        is_norm: 1,
+        reference_audio: referenceAudioUrl,
+        reference_text: this.data.voiceCloneRecord.reference_text
       })
-      
+
+      if (!audioResult.success) {
+        throw new Error(audioResult.error || '音频生成失败')
+      }
+
+      // 将音频数据上传到云存储
+      const audioCloudPath = await this.uploadAudioToCloud(audioResult.audioData, taskId)
+      const audioTempUrl = await this.getTempFileURL(audioCloudPath)
+
       // 保存音频URL到数据库
       await this.updateTaskRecord(taskId, {
-        audioUrl: audioResult.audioUrl || audioResult.audio_url,
+        audioUrl: audioCloudPath,
         status: 'generating_video'
       })
-      
+
       this.setData({
         taskStatus: 'generating_video'
       })
-      
+
+      wx.hideLoading()
+
       // 生成视频
-      await this.generateVideo(taskId, audioResult.audioUrl || audioResult.audio_url, videoTempUrl)
-      
+      await this.generateVideo(taskId, audioTempUrl, videoTempUrl)
+
     } catch (error) {
       console.error('生成音频失败:', error)
+      wx.hideLoading()
       await this.updateTaskRecord(taskId, {
         status: 'failed',
         errorMessage: error.message
       })
       throw error
     }
+  },
+
+  // 调用本地Docker服务的invoke API
+  callLocalInvokeAPI(params) {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: 'http://127.0.0.1:18180/v1/invoke',
+        method: 'POST',
+        header: {
+          'content-type': 'application/json'
+        },
+        responseType: 'arraybuffer',
+        data: params,
+        success: (res) => {
+          console.log('本地invoke API响应：', res)
+          if (res.statusCode === 200) {
+            resolve({ success: true, audioData: res.data })
+          } else {
+            resolve({ success: false, error: '音频合成失败' })
+          }
+        },
+        fail: (error) => {
+          console.error('本地invoke API调用失败：', error)
+          resolve({ success: false, error: '网络请求失败' })
+        }
+      })
+    })
+  },
+
+  // 上传音频数据到云存储
+  uploadAudioToCloud(audioData, taskId) {
+    return new Promise((resolve, reject) => {
+      const fileName = `digital_human_audios/${taskId}_${Date.now()}.wav`
+
+      // 将ArrayBuffer转换为临时文件
+      const fs = wx.getFileSystemManager()
+      const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_audio_${Date.now()}.wav`
+
+      fs.writeFile({
+        filePath: tempFilePath,
+        data: audioData,
+        success: () => {
+          // 上传到云存储
+          wx.cloud.uploadFile({
+            cloudPath: fileName,
+            filePath: tempFilePath,
+            success: res => {
+              console.log('音频上传成功:', res)
+              // 删除临时文件
+              fs.unlink({ filePath: tempFilePath })
+              resolve(res.fileID)
+            },
+            fail: err => {
+              console.error('音频上传失败:', err)
+              fs.unlink({ filePath: tempFilePath })
+              reject(err)
+            }
+          })
+        },
+        fail: reject
+      })
+    })
   },
 
   // 获取临时文件URL
@@ -248,23 +364,28 @@ Page({
     })
   },
 
-  // 调用heygem音频生成API
-  callHeygemAudioAPI(params) {
+  // 调用本地视频合成API
+  callLocalVideoAPI(params) {
     return new Promise((resolve, reject) => {
-      wx.cloud.callFunction({
-        name: 'callHeygemService',
-        data: {
-          action: 'generateAudio',
-          data: params
+      wx.request({
+        url: 'http://127.0.0.1:8383/easy/submit',
+        method: 'POST',
+        header: {
+          'content-type': 'application/json'
         },
-        success: res => {
-          if (res.result.success) {
-            resolve(res.result.data)
+        data: params,
+        success: (res) => {
+          console.log('本地视频合成API响应：', res)
+          if (res.statusCode === 200) {
+            resolve({ success: true, data: res.data })
           } else {
-            reject(new Error(res.result.error || '音频生成失败'))
+            resolve({ success: false, error: '视频合成提交失败' })
           }
         },
-        fail: reject
+        fail: (error) => {
+          console.error('本地视频合成API调用失败：', error)
+          resolve({ success: false, error: '网络请求失败' })
+        }
       })
     })
   },
@@ -272,8 +393,10 @@ Page({
   // 生成视频
   async generateVideo(taskId, audioUrl, videoUrl) {
     try {
-      // 调用heygem视频合成API
-      const videoResult = await this.callHeygemVideoAPI({
+      wx.showLoading({ title: '提交视频合成...' })
+
+      // 调用本地视频合成API
+      const videoResult = await this.callLocalVideoAPI({
         audio_url: audioUrl,
         video_url: videoUrl,
         code: taskId,
@@ -281,12 +404,19 @@ Page({
         watermark_switch: 0,
         pn: 1
       })
-      
+
+      if (!videoResult.success) {
+        throw new Error(videoResult.error || '视频合成提交失败')
+      }
+
+      wx.hideLoading()
+
       // 轮询查询结果
       await this.pollVideoResult(taskId)
-      
+
     } catch (error) {
       console.error('生成视频失败:', error)
+      wx.hideLoading()
       await this.updateTaskRecord(taskId, {
         status: 'failed',
         errorMessage: error.message
@@ -295,124 +425,114 @@ Page({
     }
   },
 
-  // 调用heygem视频合成API
-  callHeygemVideoAPI(params) {
+  // 查询本地视频合成结果
+  queryLocalVideoResult(taskCode) {
     return new Promise((resolve, reject) => {
-      wx.cloud.callFunction({
-        name: 'callHeygemService',
-        data: {
-          action: 'submitVideo',
-          data: params
-        },
-        success: res => {
-          if (res.result.success) {
-            resolve(res.result.data)
+      wx.request({
+        url: `http://127.0.0.1:8383/easy/query?code=${taskCode}`,
+        method: 'GET',
+        success: (res) => {
+          console.log('本地视频查询API响应：', res)
+          if (res.statusCode === 200) {
+            resolve({ success: true, data: res.data })
           } else {
-            reject(new Error(res.result.error || '视频合成失败'))
+            resolve({ success: false, error: '查询失败' })
           }
         },
-        fail: reject
+        fail: (error) => {
+          console.error('本地视频查询API调用失败：', error)
+          resolve({ success: false, error: '网络请求失败' })
+        }
       })
     })
   },
 
   // 轮询查询视频生成结果
   async pollVideoResult(taskId) {
-    const maxAttempts = 30 // 最多查询30次
+    const maxAttempts = 120 // 最多查询120次（30分钟）
     let attempts = 0
-    
+
     const poll = async () => {
       attempts++
-      
+
       try {
-        const result = await this.queryVideoResult(taskId)
-        
-        // 根据heygem API的实际返回格式判断状态
-        if (result.code === 200 && result.data && result.data.status === 'completed') {
+        const result = await this.queryLocalVideoResult(taskId)
+
+        if (!result.success) {
+          throw new Error(result.error || '查询失败')
+        }
+
+        const data = result.data
+        console.log(`第${attempts}次查询结果:`, data)
+
+        // 根据本地API的返回格式判断状态
+        if (data && data.status === 'completed' && data.video_url) {
           // 视频生成完成
           await this.updateTaskRecord(taskId, {
             status: 'completed',
-            finalVideoUrl: result.data.video_url || result.data.videoUrl
+            finalVideoUrl: data.video_url
           })
-          
+
           this.setData({
             isGenerating: false,
             taskStatus: 'completed'
           })
-          
+
           wx.showToast({
             title: '数字人视频生成成功',
             icon: 'success'
           })
-          
+
           // 刷新列表
           this.getDigitalHumanList()
-          
-        } else if (result.code === 200 && result.data && result.data.status === 'failed') {
+
+        } else if (data && data.status === 'failed') {
           throw new Error('视频生成失败')
-        } else if (result.code === 200 && result.data && (result.data.status === 'processing' || result.data.status === 'pending')) {
+        } else if (data && (data.status === 'processing' || data.status === 'pending' || data.status === 'running')) {
           // 继续轮询
           if (attempts < maxAttempts) {
-            setTimeout(poll, 3000) // 3秒后再次查询
+            setTimeout(poll, 15000) // 15秒后再次查询
           } else {
             throw new Error('视频生成超时')
           }
         } else {
-          // 其他情况继续轮询或报错
+          // 其他情况继续轮询
           if (attempts < maxAttempts) {
-            setTimeout(poll, 3000)
+            setTimeout(poll, 15000)
           } else {
             throw new Error('视频生成超时')
           }
         }
-        
+
       } catch (error) {
         console.error('查询视频结果失败:', error)
         await this.updateTaskRecord(taskId, {
           status: 'failed',
           errorMessage: error.message
         })
-        
+
         this.setData({
           isGenerating: false,
           taskStatus: 'failed'
         })
-        
+
         wx.showToast({
           title: '视频生成失败',
           icon: 'none'
         })
       }
     }
-    
+
+    // 开始轮询
     poll()
   },
 
-  // 查询视频生成结果
-  queryVideoResult(taskId) {
-    return new Promise((resolve, reject) => {
-      wx.cloud.callFunction({
-        name: 'callHeygemService',
-        data: {
-          action: 'queryVideo',
-          data: { code: taskId }
-        },
-        success: res => {
-          if (res.result.success) {
-            resolve(res.result.data)
-          } else {
-            reject(new Error(res.result.error || '查询失败'))
-          }
-        },
-        fail: reject
-      })
-    })
-  },
+
 
   // 更新任务记录
   async updateTaskRecord(taskId, updateData) {
     const db = wx.cloud.database()
-    
+
     try {
       await db.collection('digital_humans')
         .where({
@@ -440,16 +560,16 @@ Page({
         })
         .orderBy('createTime', 'desc')
         .get()
-      
+
       console.log('获取数字人列表成功:', res.data)
-      
+
       this.setData({
         digitalHumanList: res.data.map(item => ({
           ...item,
           createTime: this.formatDate(item.createTime)
         }))
       })
-      
+
     } catch (error) {
       console.error('获取数字人列表失败:', error)
       wx.showToast({
@@ -500,5 +620,14 @@ Page({
     }).catch(() => {
       wx.stopPullDownRefresh()
     })
-  }
+  },
+
+  // 生成UUID
+  generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0,
+        v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  },
 })
