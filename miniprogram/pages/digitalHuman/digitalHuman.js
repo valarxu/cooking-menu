@@ -347,6 +347,55 @@ Page({
     })
   },
 
+  // 上传本地视频文件到云存储
+  uploadLocalVideoToCloud(localVideoPath, taskId) {
+    return new Promise((resolve, reject) => {
+      console.log('开始上传本地视频:', localVideoPath)
+
+      // 将路径中的正斜杠替换为反斜杠（Windows格式）
+      let normalizedPath = localVideoPath.replace(/\//g, '\\')
+      
+      // 去掉开头的反斜杠（如果有的话）
+      if (normalizedPath.startsWith('\\')) {
+        normalizedPath = normalizedPath.substring(1)
+      }
+      
+      // 拼接完整的本地文件路径
+      const fullLocalPath = `D:\\heygem_data\\face2face\\temp\\${normalizedPath}`
+      console.log('原始路径:', localVideoPath)
+      console.log('标准化路径:', normalizedPath)
+      console.log('完整本地路径:', fullLocalPath)
+
+      // 检查本地文件是否存在
+      const fs = wx.getFileSystemManager()
+
+      try {
+        // 检查文件是否存在
+        fs.accessSync(fullLocalPath)
+
+        // 生成云存储文件名
+        const fileName = `digital_human_videos/${taskId}_${Date.now()}.mp4`
+
+        // 上传到云存储
+        wx.cloud.uploadFile({
+          cloudPath: fileName,
+          filePath: fullLocalPath,
+          success: res => {
+            console.log('视频上传成功:', res)
+            resolve(res.fileID)
+          },
+          fail: err => {
+            console.error('视频上传失败:', err)
+            reject(new Error(`视频上传失败: ${err.errMsg || err.message || '未知错误'}`))
+          }
+        })
+      } catch (error) {
+        console.error('本地文件不存在或无法访问:', error)
+        reject(new Error(`本地文件不存在或无法访问: ${fullLocalPath}`))
+      }
+    })
+  },
+
   // 获取临时文件URL
   getTempFileURL(fileID) {
     return new Promise((resolve, reject) => {
@@ -449,7 +498,7 @@ Page({
 
   // 轮询查询视频生成结果
   async pollVideoResult(taskId) {
-    const maxAttempts = 120 // 最多查询120次（30分钟）
+    const maxAttempts = 120 // 最多查询60次
     let attempts = 0
 
     const poll = async () => {
@@ -466,42 +515,69 @@ Page({
         console.log(`第${attempts}次查询结果:`, data)
 
         // 根据本地API的返回格式判断状态
-        if (data && data.status === 'completed' && data.video_url) {
-          // 视频生成完成
-          await this.updateTaskRecord(taskId, {
-            status: 'completed',
-            finalVideoUrl: data.video_url
-          })
+        if (data.data && data.data.status === 2 && data.data.result) {
+          // 视频生成完成，上传到云存储
+          wx.showLoading({ title: '上传视频到云端...' })
 
-          this.setData({
-            isGenerating: false,
-            taskStatus: 'completed'
-          })
+          try {
+            const cloudVideoUrl = await this.uploadLocalVideoToCloud(data.data.result, taskId)
 
-          wx.showToast({
-            title: '数字人视频生成成功',
-            icon: 'success'
-          })
+            await this.updateTaskRecord(taskId, {
+              status: 'completed',
+              finalVideoUrl: cloudVideoUrl,
+              localVideoUrl: data.data.result // 保留本地路径作为备份
+            })
 
-          // 刷新列表
-          this.getDigitalHumanList()
+            this.setData({
+              isGenerating: false,
+              taskStatus: 'completed'
+            })
 
-        } else if (data && data.status === 'failed') {
+            wx.hideLoading()
+            wx.showToast({
+              title: '数字人视频生成成功',
+              icon: 'success'
+            })
+
+            // 刷新列表
+            this.getDigitalHumanList()
+          } catch (uploadError) {
+            console.error('视频上传失败:', uploadError)
+            wx.hideLoading()
+
+            // 即使上传失败，也保存本地路径
+            await this.updateTaskRecord(taskId, {
+              status: 'completed',
+              finalVideoUrl: data.data.result,
+              uploadError: uploadError.message
+            })
+
+            this.setData({
+              isGenerating: false,
+              taskStatus: 'completed'
+            })
+
+            wx.showToast({
+              title: '视频生成成功，但上传失败',
+              icon: 'none',
+              duration: 3000
+            })
+
+            // 刷新列表
+            this.getDigitalHumanList()
+          }
+
+        } else if (data.data && data.data.status == 0) {
           throw new Error('视频生成失败')
-        } else if (data && (data.status === 'processing' || data.status === 'pending' || data.status === 'running')) {
+        } else if (data.data && data.data.status == 1) {
           // 继续轮询
           if (attempts < maxAttempts) {
-            setTimeout(poll, 15000) // 15秒后再次查询
+            setTimeout(poll, 60000) // 60秒后再次查询
           } else {
             throw new Error('视频生成超时')
           }
         } else {
-          // 其他情况继续轮询
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 15000)
-          } else {
-            throw new Error('视频生成超时')
-          }
+          throw new Error('视频生成状态未知')
         }
 
       } catch (error) {
