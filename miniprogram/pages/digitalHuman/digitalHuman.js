@@ -350,49 +350,44 @@ Page({
   // 上传本地视频文件到云存储
   uploadLocalVideoToCloud(localVideoPath, taskId) {
     return new Promise((resolve, reject) => {
-      console.log('开始上传本地视频:', localVideoPath)
+      console.log('开始下载并上传视频:', localVideoPath)
 
-      // 将路径中的正斜杠替换为反斜杠（Windows格式）
-      let normalizedPath = localVideoPath.replace(/\//g, '\\')
-      
-      // 去掉开头的反斜杠（如果有的话）
-      if (normalizedPath.startsWith('\\')) {
-        normalizedPath = normalizedPath.substring(1)
-      }
-      
-      // 拼接完整的本地文件路径
-      const fullLocalPath = `D:\\heygem_data\\face2face\\temp\\${normalizedPath}`
-      console.log('原始路径:', localVideoPath)
-      console.log('标准化路径:', normalizedPath)
-      console.log('完整本地路径:', fullLocalPath)
+      // 构建视频访问URL
+      const videoUrl = `http://localhost:80/videos/${localVideoPath}`
+      console.log('视频URL:', videoUrl)
 
-      // 检查本地文件是否存在
-      const fs = wx.getFileSystemManager()
+      // 下载视频文件
+      wx.downloadFile({
+        url: videoUrl,
+        success: (downloadRes) => {
+          console.log('视频下载成功:', downloadRes)
+          
+          if (downloadRes.statusCode === 200) {
+            // 生成云存储文件名
+            const fileName = `digital_human_videos/${taskId}_${Date.now()}.mp4`
 
-      try {
-        // 检查文件是否存在
-        fs.accessSync(fullLocalPath)
-
-        // 生成云存储文件名
-        const fileName = `digital_human_videos/${taskId}_${Date.now()}.mp4`
-
-        // 上传到云存储
-        wx.cloud.uploadFile({
-          cloudPath: fileName,
-          filePath: fullLocalPath,
-          success: res => {
-            console.log('视频上传成功:', res)
-            resolve(res.fileID)
-          },
-          fail: err => {
-            console.error('视频上传失败:', err)
-            reject(new Error(`视频上传失败: ${err.errMsg || err.message || '未知错误'}`))
+            // 上传到云存储
+            wx.cloud.uploadFile({
+              cloudPath: fileName,
+              filePath: downloadRes.tempFilePath,
+              success: res => {
+                console.log('视频上传成功:', res)
+                resolve(res.fileID)
+              },
+              fail: err => {
+                console.error('视频上传失败:', err)
+                reject(new Error(`视频上传失败: ${err.errMsg || err.message || '未知错误'}`))
+              }
+            })
+          } else {
+            reject(new Error(`视频下载失败，状态码: ${downloadRes.statusCode}`))
           }
-        })
-      } catch (error) {
-        console.error('本地文件不存在或无法访问:', error)
-        reject(new Error(`本地文件不存在或无法访问: ${fullLocalPath}`))
-      }
+        },
+        fail: err => {
+          console.error('视频下载失败:', err)
+          reject(new Error(`视频下载失败: ${err.errMsg || err.message || '网络错误'}`))
+        }
+      })
     })
   },
 
