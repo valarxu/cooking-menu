@@ -24,7 +24,7 @@
       <block wx:else>
         <video class="video-preview" src="{{videoFile.tempFilePath}}" controls></video>
         <view class="video-actions">
-          <my-button class="action-btn" type="outline" bindtap="reChooseVideo">重新选择</my-button>
+          <my-button type="outline" bindtap="reChooseVideo">重新选择</my-button>
         </view>
       </block>
     </view>
@@ -47,8 +47,7 @@
   <!-- 生成按钮 -->
   <view class="generate-section" wx:if="{{hasClonedVoice}}">
     <my-button 
-      class="generate-btn" 
-      type="primary" 
+      type="gradient" 
       loading="{{isGenerating}}"
       disabled="{{isGenerating || !videoFile || !textContent.trim()}}"
       bindtap="submitDigitalHuman"

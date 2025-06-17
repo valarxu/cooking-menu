@@ -10,15 +10,9 @@
     <view class="section-title">
       <text>可用声音</text>
     </view>
-    
+
     <view class="voice-items">
-      <view 
-        class="voice-item {{selectedVoiceId === item.id ? 'selected' : ''}} {{item.isCloned ? 'cloned-voice' : ''}}"
-        wx:for="{{voiceList}}"
-        wx:key="id"
-        data-voice-id="{{item.id}}"
-        bindtap="selectVoice"
-      >
+      <view class="voice-item {{selectedVoiceId === item.id ? 'selected' : ''}} {{item.isCloned ? 'cloned-voice' : ''}}" wx:for="{{voiceList}}" wx:key="id" data-voice-id="{{item.id}}" bindtap="selectVoice">
         <view class="voice-info">
           <image class="voice-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
           <view class="voice-details">
@@ -30,13 +24,7 @@
           </view>
         </view>
         <view class="voice-actions">
-          <button 
-            class="play-btn {{playingVoiceId === item.id ? 'playing' : ''}}"
-            data-voice-id="{{item.id}}"
-            data-audio-url="{{item.sampleUrl}}"
-            catchtap="playVoiceSample"
-            size="mini"
-          >
+          <button class="play-btn {{playingVoiceId === item.id ? 'playing' : ''}}" data-voice-id="{{item.id}}" data-audio-url="{{item.sampleUrl}}" catchtap="playVoiceSample" size="mini">
             {{playingVoiceId === item.id ? '暂停' : '试听'}}
           </button>
         </view>
@@ -59,9 +47,9 @@
 
   <!-- 克隆我的声音按钮 -->
   <view class="clone-section">
-    <button class="clone-btn" bindtap="showCloneModal" disabled="{{isPolling}}">
-      <text class="clone-btn-text">{{isPolling ? '克隆中...' : '克隆我的声音'}}</text>
-    </button>
+    <my-button type="gradient" loading="{{isPolling}}" disabled="{{isPolling}}" bindtap="showCloneModal">
+      {{isPolling ? '克隆中...' : '克隆我的声音'}}
+    </my-button>
   </view>
 
   <!-- 录音弹窗 -->
@@ -71,7 +59,7 @@
         <text class="modal-title">录制您的声音</text>
         <text class="modal-close" bindtap="hideCloneModal">×</text>
       </view>
-      
+
       <view class="modal-body">
         <view class="record-text">
           <text class="text-title">请朗读以下内容：</text>
@@ -79,23 +67,18 @@
             <text>{{referenceText}}</text>
           </view>
         </view>
-        
+
         <view class="record-controls">
           <view class="record-status">
             <text class="status-text">{{recordStatus}}</text>
             <text class="record-time" wx:if="{{isRecording}}">{{recordTime}}s</text>
           </view>
-          
-          <button 
-            class="record-btn {{isRecording ? 'recording' : ''}}"
-            bindtouchstart="startRecord"
-            bindtouchend="stopRecord"
-            bindtouchcancel="stopRecord"
-          >
+
+          <button class="record-btn {{isRecording ? 'recording' : ''}}" bindtouchstart="startRecord" bindtouchend="stopRecord" bindtouchcancel="stopRecord">
             <text class="record-btn-text">{{isRecording ? '录制中...' : '按住录制'}}</text>
           </button>
         </view>
-        
+
         <!-- 录音播放 -->
         <view class="playback-section" wx:if="{{recordedAudioPath}}">
           <text class="playback-title">录音试听：</text>
@@ -104,14 +87,10 @@
           </button>
         </view>
       </view>
-      
+
       <view class="modal-footer">
         <button class="cancel-btn" bindtap="hideCloneModal">取消</button>
-        <button 
-          class="submit-btn {{!recordedAudioPath ? 'disabled' : ''}}"
-          bindtap="submitVoiceClone"
-          disabled="{{!recordedAudioPath || isSubmitting}}"
-        >
+        <button class="submit-btn {{!recordedAudioPath ? 'disabled' : ''}}" bindtap="submitVoiceClone" disabled="{{!recordedAudioPath || isSubmitting}}">
           {{isSubmitting ? '提交中...' : '提交'}}
         </button>
       </view>

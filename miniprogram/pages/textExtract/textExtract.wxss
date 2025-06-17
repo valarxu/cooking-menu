@@ -1,7 +1,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 40rpx;
   padding: 32rpx;
 }
 .video-input {
@@ -15,19 +15,11 @@
   border: 1rpx solid #e5e5e5;
   box-sizing: border-box;
 }
-.extract-btn, .copy-btn, .opt-btn {
-  background: none;
-  color: inherit;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  margin: 0;
-}
 .result-area {
-  margin-top: 24rpx;
+  margin-top: 64rpx;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 40rpx;
 }
 .result-text {
   width: 100%;

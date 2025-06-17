@@ -91,13 +91,12 @@
 }
 
 .video-actions {
-  display: flex;
-  justify-content: center;
+  display: block;
   margin-top: 20rpx;
 }
 
 .action-btn {
-  width: 200rpx;
+  width: 340rpx;
 }
 
 /* 文案输入区域 */
@@ -128,13 +127,6 @@
 .generate-section {
   margin-bottom: 40rpx;
   text-align: center;
-}
-
-.generate-btn {
-  width: 100%;
-  height: 88rpx;
-  font-size: 32rpx;
-  border-radius: 44rpx;
 }
 
 .status-tip {

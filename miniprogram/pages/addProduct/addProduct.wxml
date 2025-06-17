@@ -32,7 +32,7 @@
 
     <!-- 提交按钮 -->
     <view class="submit-container">
-      <my-button bind:tap="onSubmit" loading="{{submitting}}">{{isEdit ? '更新产品' : '保存产品'}}</my-button>
+      <my-button bind:tap="onSubmit" type="gradient" loading="{{submitting}}">{{isEdit ? '更新产品' : '保存产品'}}</my-button>
       <my-button wx:if="{{isEdit}}" bind:tap="onDelete" type="outline" custom-class="delete-btn">删除产品</my-button>
     </view>
   </form>

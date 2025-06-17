@@ -4,25 +4,7 @@
   min-height: 100vh;
 }
 
-.upload-btn {
-  background-color: #6145FF;
-  color: white;
-  font-size: 28rpx;
-  padding: 10rpx 30rpx;
-  border-radius: 30rpx;
-}
 
-.upload-btn.floating {
-  position: fixed;
-  bottom: 60rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 72rpx;
-  line-height: 54rpx;
-  text-align: center;
-  box-shadow: 0 4rpx 16rpx rgba(97, 69, 255, 0.3);
-  z-index: 100;
-}
 
 .product-list {
   display: flex;

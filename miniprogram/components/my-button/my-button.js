@@ -9,7 +9,7 @@ Component({
     },
     type: {
       type: String,
-      value: 'primary' // 支持primary/outline/gradient
+      value: 'primary' // 支持primary/outline/gradient/floating
     },
     loading: {
       type: Boolean,

@@ -39,5 +39,7 @@
     </view>
   </view>
 
-  <button class="upload-btn floating" bindtap="chooseVideo">上传视频</button>
+  <my-button type="floating" bindtap="chooseVideo">
+    上传视频
+  </my-button>
 </view>

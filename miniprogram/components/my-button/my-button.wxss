@@ -2,29 +2,37 @@
   background: #6145FF;
   color: #fff;
   border: none;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 16rpx 0 rgba(97,69,255,0.15);
-  font-size: 30rpx;
+  box-shadow: 0 4rpx 16rpx 0 rgba(97, 69, 255, 0.15);
   padding: 18rpx 0;
-  width: 80%;
-  margin: 0 auto 36rpx auto;
-  display: block;
-  transition: background 0.2s, color 0.2s;
-  position: relative;
+  width: 100%;
+  height: 100rpx;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin: 0;
+  padding: 0;
 }
+
 .my-btn:active {
   background: #4b36c9;
 }
+
 .my-btn-outline {
   background: #fff;
   color: #6145FF;
   border: 2rpx solid #6145FF;
-  box-shadow: 0 4rpx 16rpx 0 rgba(97,69,255,0.08);
+  box-shadow: 0 4rpx 16rpx 0 rgba(97, 69, 255, 0.08);
 }
+
 .my-btn-outline:active {
   background: #f3f1ff;
   color: #4b36c9;
 }
+
 .my-btn-gradient {
   width: 100%;
   height: 100rpx;
@@ -42,18 +50,50 @@
   margin: 0;
   padding: 0;
 }
+
 .my-btn-gradient:active {
   transform: translateY(2rpx);
   box-shadow: 0 5rpx 15rpx rgba(97, 69, 255, 0.3);
 }
+
+.my-btn-floating {
+  position: fixed;
+  bottom: 60rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600rpx;
+  height: 100rpx;
+  background: linear-gradient(135deg, #6145FF 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 30rpx rgba(97, 69, 255, 0.4);
+  transition: all 0.3s ease;
+  margin: 0;
+  padding: 0;
+  z-index: 1000;
+}
+
+.my-btn-floating:active {
+  transform: translateX(-50%) translateY(2rpx);
+  box-shadow: 0 8rpx 25rpx rgba(97, 69, 255, 0.4);
+}
+
 .my-btn-loading {
   opacity: 0.8;
   pointer-events: none;
 }
+
 .my-btn-gradient.my-btn-loading {
   background: #ccc;
   box-shadow: none;
 }
+
 .loading-icon {
   width: 32rpx;
   height: 32rpx;
@@ -66,14 +106,17 @@
   top: 50%;
   transform: translate(-50%, -50%);
 }
+
 .my-btn-outline .loading-icon {
   border-color: #6145FF;
   border-top-color: transparent;
 }
+
 @keyframes spin {
   from {
     transform: translate(-50%, -50%) rotate(0deg);
   }
+
   to {
     transform: translate(-50%, -50%) rotate(360deg);
   }
