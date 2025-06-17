@@ -13,6 +13,6 @@
     <input class="profile-value" type="number" placeholder="请输入手机号" value="{{phoneNumber}}" bindinput="onInputPhoneNumber" maxlength="11" />
   </view>
 
-  <button class="save-btn" bindtap="saveUserInfo">保存</button>
+  <my-button type="gradient" bind:tap="saveUserInfo">保存</my-button>
   <button class="logout-btn" bindtap="logout">退出登录</button>
 </view>

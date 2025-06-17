@@ -18,7 +18,7 @@
   margin-bottom: 24rpx;
 }
 .button-group {
-  margin: 36rpx 0 16rpx 0;
+  margin: 16rpx 0 16rpx 0;
 }
 .avatar {
   width: 120rpx;
@@ -111,4 +111,27 @@
   font-size: 32rpx;
   color: #333;
   font-weight: 500;
+}
+
+/* 编辑资料按钮样式 - 超链接风格 */
+.edit-btn {
+  background: none;
+  border: 0 !important;
+  outline: none;
+  color: #4b36c9;
+  font-size: 28rpx;
+  padding: 0;
+  margin: 0;
+  /* text-decoration: underline; */
+  font-weight: normal;
+}
+
+/* 移除微信小程序 button 组件的默认伪边框 */
+.edit-btn::after {
+  border: none;
+}
+
+.edit-btn:active {
+  opacity: 0.6;
+  background: none;
 }

@@ -145,7 +145,7 @@
   background-color: #fff;
   color: #ff4d4f;
   border: 2rpx solid #ff4d4f;
-  border-radius: 44rpx;
+  border-radius: 50rpx;
   font-size: 32rpx;
   display: block;
   z-index: 100;
