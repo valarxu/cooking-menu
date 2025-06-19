@@ -9,9 +9,28 @@ Page({
     materialList: [], // 素材库
     selectedMaterialIds: [],
   },
-  onLoad() {
+  onLoad(options) {
     // 加载素材库
     this.loadMaterialList();
+    
+    // 如果从video-text页面跳转过来，接收文案参数
+    if (options.text) {
+      this.setData({
+        text: decodeURIComponent(options.text)
+      })
+    }
+  },
+  
+  onShow() {
+    // 检查全局数据中是否有生成的文案
+    const app = getApp()
+    if (app.globalData.generatedText) {
+      this.setData({
+        text: app.globalData.generatedText
+      })
+      // 清除全局数据，避免重复使用
+      app.globalData.generatedText = ''
+    }
   },
   // 步骤切换
   nextStep() {
@@ -25,8 +44,10 @@ Page({
     this.setData({ text: e.detail.value });
   },
   onAIGenerate() {
-    // TODO: AI生成文案
-    wx.showToast({ title: 'AI生成文案', icon: 'none' });
+    // 跳转到AI文案生成页面（非tabBar页面，使用navigateTo）
+    wx.navigateTo({
+      url: '/pages/video-text/video-text'
+    })
   },
   // 步骤二
   onVoiceTypeChange(e) {
@@ -70,4 +91,4 @@ Page({
     console.log('生成视频参数：', data);
     wx.showToast({ title: '参数已打印控制台', icon: 'none' });
   }
-}) 
+})

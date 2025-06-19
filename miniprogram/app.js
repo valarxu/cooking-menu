@@ -33,6 +33,7 @@ App({
 
   globalData: {
     userInfo: null,
-    isLogin: false
+    isLogin: false,
+    generatedText: '' // 用于存储从video-text页面生成的文案
   }
 });

@@ -316,7 +316,7 @@ Page({
               this.setData({ loading: false })
             } else if (status === 'Running') {
               if (attempts < maxAttempts) {
-                setTimeout(poll, 3000)
+                setTimeout(poll, 10000)
               } else {
                 wx.showToast({
                   title: '查询超时，请重试',
@@ -333,7 +333,7 @@ Page({
             }
           } else {
             if (attempts < maxAttempts) {
-              setTimeout(poll, 3000)
+              setTimeout(poll, 10000)
             } else {
               wx.showToast({
                 title: '查询失败，请重试',
@@ -346,7 +346,7 @@ Page({
         fail: (error) => {
           console.error('查询云函数调用失败：', error)
           if (attempts < maxAttempts) {
-            setTimeout(poll, 3000)
+            setTimeout(poll, 10000)
           } else {
             wx.showToast({
               title: '查询失败，请重试',
@@ -361,7 +361,7 @@ Page({
     poll()
   },
 
-  // 复制文案
+  // 复制文案并跳转到视频创作页面
   copyText() {
     if (!this.data.outputText) {
       wx.showToast({
@@ -370,11 +370,31 @@ Page({
       })
       return
     }
-    
+
     wx.setClipboardData({
       data: this.data.outputText,
       success: () => {
-        wx.showToast({ title: '复制成功', icon: 'success' })
+        // 将生成的文案存储到全局数据中
+        getApp().globalData.generatedText = this.data.outputText
+        
+        wx.showToast({
+          title: '复制成功，正在跳转...',
+          icon: 'success',
+          duration: 1000
+        })
+        
+        // 使用switchTab跳转到tabBar页面
+        setTimeout(() => {
+          wx.switchTab({
+            url: '/pages/videoCreate/videoCreate'
+          })
+        }, 1000)
+      },
+      fail: () => {
+        wx.showToast({
+          title: '复制失败',
+          icon: 'none'
+        })
       }
     })
   }

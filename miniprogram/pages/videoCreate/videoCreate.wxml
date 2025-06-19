@@ -3,7 +3,7 @@
   <view wx:if="{{step === 1}}">
     <textarea class="text-input" placeholder="请输入文案" value="{{text}}" bindinput="onTextInput"></textarea>
     <view class="btn-container">
-      <my-button type="primary" type="outline" bindtap="onAIGenerate">AI生成</my-button>
+      <my-button type="primary" type="outline" bindtap="onAIGenerate">用AI生成</my-button>
       <my-button type="primary" bindtap="nextStep">下一步</my-button>
     </view>
   </view>

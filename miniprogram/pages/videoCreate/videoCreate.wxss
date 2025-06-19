@@ -38,7 +38,10 @@
   margin-bottom: 8rpx;
 }
 .btn-container {
+  display: flex;
   margin-top: 48rpx;
+  flex-direction: column;
+  gap: 40rpx
 }
 .step-title {
   font-size: 32rpx;

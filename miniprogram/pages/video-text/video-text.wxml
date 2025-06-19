@@ -156,7 +156,7 @@
       <text class="result-text">{{outputText}}</text>
     </view>
     <button class="copy-btn" bindtap="copyText">
-      复制文案
+      复制文案去创作视频
     </button>
   </view>
 </view>
