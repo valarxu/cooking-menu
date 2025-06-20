@@ -8,46 +8,87 @@
     </view>
   </view>
 
-  <!-- 步骤二：口播音频+BGM选择 -->
+  <!-- 步骤二：声音选择 -->
   <view wx:if="{{step === 2}}">
-    <view class="step-title">口播音频选择</view>
-    <radio-group bindchange="onVoiceTypeChange">
-      <label>
-        <radio value="ai" checked="{{voiceType==='ai'}}" />AI口播
-      </label>
-      <label>
-        <radio value="clone" checked="{{voiceType==='clone'}}" />克隆声音
-      </label>
-      <label>
-        <radio value="upload" checked="{{voiceType==='upload'}}" />上传配音
-      </label>
-    </radio-group>
-    <view class="btn-container">
-      <view wx:if="{{voiceType==='upload'}}">
-        <my-button type="primary" bindtap="onUploadVoice">上传配音</my-button>
+    <view class="step-title">选择声音</view>
+    
+    <!-- 声音列表 -->
+    <view class="voice-list">
+      <view class="voice-items">
+        <view class="voice-item {{selectedVoiceId === item.id ? 'selected' : ''}} {{item.isCloned ? 'cloned-voice' : ''}}" wx:for="{{voiceList}}" wx:key="id" data-voice-id="{{item.id}}" bindtap="selectVoice">
+          <view class="voice-info">
+            <image class="voice-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+            <view class="voice-details">
+              <view class="voice-name-wrapper">
+                <text class="voice-name">{{item.name}}</text>
+                <text class="cloned-badge" wx:if="{{item.isCloned}}">我的</text>
+              </view>
+              <text class="voice-desc">{{item.description}}</text>
+            </view>
+          </view>
+          <view class="voice-actions">
+            <button class="play-btn {{playingVoiceId === item.id ? 'playing' : ''}}" data-voice-id="{{item.id}}" data-audio-url="{{item.sampleUrl}}" catchtap="playVoiceSample" size="mini">
+              {{playingVoiceId === item.id ? '暂停' : '试听'}}
+            </button>
+          </view>
+        </view>
+        
+        <!-- 上传配音选项 -->
+        <view class="voice-item {{selectedVoiceId === 'upload' ? 'selected' : ''}}" data-voice-id="upload" bindtap="selectVoice">
+          <view class="voice-info">
+            <image class="voice-avatar" src="/images/avatar/male1.svg" mode="aspectFill"></image>
+            <view class="voice-details">
+              <view class="voice-name-wrapper">
+                <text class="voice-name">上传配音</text>
+              </view>
+              <text class="voice-desc">{{uploadedVoiceFile ? uploadedVoiceFile.name || '已选择音频文件' : '上传您自己的配音文件'}}</text>
+            </view>
+          </view>
+          <view class="voice-actions">
+            <button class="upload-btn" bindtap="uploadVoiceFile" size="mini">
+              {{uploadedVoiceFile ? '重新选择' : '选择文件'}}
+            </button>
+          </view>
+        </view>
       </view>
     </view>
-    <view class="step-title" style="margin-top:32rpx;">BGM选择</view>
-    <radio-group bindchange="onBgmTypeChange">
-      <label>
-        <radio value="auto" checked="{{bgmType==='auto'}}" />自动匹配
-      </label>
-      <label>
-        <radio value="upload" checked="{{bgmType==='upload'}}" />自己上传
-      </label>
-    </radio-group>
+    
+    <view class="btn-container">
+      <my-button type="outline" bindtap="prevStep">上一步</my-button>
+      <my-button type="primary" bindtap="nextStep">下一步</my-button>
+    </view>
+  </view>
+
+  <!-- 步骤三：BGM选择 -->
+  <view wx:if="{{step === 3}}">
+    <view class="step-title">选择BGM</view>
+    
+    <view class="bgm-options">
+      <radio-group bindchange="onBgmTypeChange">
+        <label class="bgm-option {{bgmType === 'auto' ? 'selected' : ''}}">
+          <radio value="auto" checked="{{bgmType==='auto'}}" />自动选择
+          <view class="option-desc">系统将根据文案内容自动匹配合适的背景音乐</view>
+        </label>
+        <label class="bgm-option {{bgmType === 'upload' ? 'selected' : ''}}">
+          <radio value="upload" checked="{{bgmType==='upload'}}" />自己上传
+          <view class="option-desc">{{uploadedBgmFile ? uploadedBgmFile.name || '已选择BGM文件' : '上传您自己的背景音乐'}}</view>
+        </label>
+      </radio-group>
+    </view>
+    
     <view class="btn-container">
       <view wx:if="{{bgmType==='upload'}}">
-        <my-button type="primary" bindtap="onUploadBgm">上传BGM</my-button>
+        <my-button type="primary" bindtap="uploadBgmFile">{{uploadedBgmFile ? '重新选择BGM' : '选择BGM文件'}}</my-button>
       </view>
       <my-button type="outline" bindtap="prevStep">上一步</my-button>
       <my-button type="primary" bindtap="nextStep">下一步</my-button>
     </view>
   </view>
 
-  <!-- 步骤三：视频素材选择 -->
-  <view wx:if="{{step === 3}}">
-    <view>请选择视频素材（可多选）：</view>
+  <!-- 步骤四：视频素材选择 -->
+  <view wx:if="{{step === 4}}">
+    <view class="step-title">选择视频素材</view>
+    <view class="step-desc">请选择视频素材（可多选）：</view>
     <checkbox-group value="{{selectedMaterialIds}}" bindchange="onMaterialCheckboxChange">
       <view class="video-list">
         <block wx:if="{{materialList.length > 0}}">
@@ -68,7 +109,7 @@
       </view>
     </checkbox-group>
     <view class="btn-container">
-      <my-button type="default" bindtap="prevStep">上一步</my-button>
+      <my-button type="outline" bindtap="prevStep">上一步</my-button>
       <my-button type="primary" bindtap="onGenerateVideo">生成视频</my-button>
     </view>
   </view>
