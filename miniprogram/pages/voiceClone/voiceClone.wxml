@@ -74,8 +74,8 @@
             <text class="record-time" wx:if="{{isRecording}}">{{recordTime}}s</text>
           </view>
 
-          <button class="record-btn {{isRecording ? 'recording' : ''}}" bindtouchstart="startRecord" bindtouchend="stopRecord" bindtouchcancel="stopRecord">
-            <text class="record-btn-text">{{isRecording ? '录制中...' : '按住录制'}}</text>
+          <button class="record-btn {{isRecording ? 'recording' : ''}}" bindtap="toggleRecord">
+            <text class="record-btn-text">{{isRecording ? '点击停止' : '点击录制'}}</text>
           </button>
         </view>
 

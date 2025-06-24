@@ -292,6 +292,17 @@ Page({
     }
   },
 
+  // 切换录音状态（点击录制/停止）
+  toggleRecord() {
+    if (this.data.isRecording) {
+      // 当前正在录制，点击停止
+      this.stopRecord()
+    } else {
+      // 当前未录制，点击开始录制
+      this.startRecord()
+    }
+  },
+
   // 播放录制的音频
   playRecordedAudio() {
     console.log('播放录制音频，路径：', this.data.recordedAudioPath)
