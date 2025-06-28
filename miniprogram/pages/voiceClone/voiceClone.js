@@ -52,18 +52,40 @@ Page({
     referenceText: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!',
 
     // 定时器
-    recordTimer: null
+    recordTimer: null,
+    
+    // 队列状态
+    queueStats: null,
+    isPolling: false,
+    currentTaskId: null,
+    // 任务进度状态
+    taskProgress: {
+      status: '', // 'pending', 'processing', 'completed', 'failed'
+      message: '',
+      progress: 0
+    },
+    // API配置
+    apiConfig: {
+      baseUrl: 'http://127.0.0.1:3000',
+      timeout: 30000,
+      pollInterval: 10000, // 轮询间隔（毫秒）
+      maxPollAttempts: 20, // 最大轮询次数（5分钟）
+      retryAttempts: 3, // API重试次数
+      retryDelay: 1000 // 重试延迟（毫秒）
+    }
   },
 
   onLoad() {
     this.initRecorder()
     this.initAudioContext()
     this.loadUserClonedVoices()
+    this.loadQueueStats()
   },
 
   onShow() {
     // 每次显示页面时刷新用户克隆的声音
     this.loadUserClonedVoices()
+    this.loadQueueStats()
   },
 
   onUnload() {
@@ -389,17 +411,27 @@ Page({
   // 提交声音克隆
   async submitVoiceClone() {
     if (!this.data.recordedAudioPath) {
-      wx.showToast({
-        title: '请先录制音频',
-        icon: 'none'
+      wx.showModal({
+        title: '提示',
+        content: '请先录制音频',
+        showCancel: false
       })
       return
     }
 
-    this.setData({ isSubmitting: true })
+    this.setData({ 
+      isSubmitting: true,
+      'taskProgress.status': 'pending',
+      'taskProgress.message': '开始处理声音克隆...',
+      'taskProgress.progress': 0
+    })
 
     try {
       // 1. 上传音频文件到云存储
+      this.setData({
+        'taskProgress.message': '正在上传音频...',
+        'taskProgress.progress': 10
+      })
       wx.showLoading({ title: '上传音频中...' })
 
       const uploadResult = await this.uploadAudioToCloud()
@@ -409,6 +441,10 @@ Page({
       let voice_url = voiceRes.fileList[0].tempFileURL;
 
       // 3. 调用本地Docker服务进行声音预处理和训练
+      this.setData({
+        'taskProgress.message': '正在处理声音克隆...',
+        'taskProgress.progress': 20
+      })
       wx.showLoading({ title: '声音训练中...' })
 
       const speaker = this.generateUUID();
@@ -416,10 +452,21 @@ Page({
 
       if (preprocessResult.success) {
         // 4. 保存克隆记录到数据库
+        this.setData({
+          'taskProgress.message': '正在保存记录...',
+          'taskProgress.progress': 80
+        })
         await this.saveVoiceCloneRecord(uploadResult.fileID, speaker, voice_url)
 
         // 5. 使用训练好的音频，继续合成新音频文件
+        this.setData({
+          'taskProgress.message': '正在合成测试音频...',
+          'taskProgress.progress': 90
+        })
         wx.showLoading({ title: '合成测试音频中...' })
+        
+        // 设置轮询状态
+        this.setData({ isPolling: true })
 
         const synthesizeResult = await this.synthesizeWithClonedVoice(
           this.data.defaultText,
@@ -429,6 +476,9 @@ Page({
             referenceText: this.data.referenceText
           }
         )
+        
+        // 清除轮询状态
+        this.setData({ isPolling: false, currentTaskId: null })
 
         // 5.1 更新数据库记录，保存合成音频URL
         await this.updateVoiceCloneRecordWithSynthesizedAudio(speaker, synthesizeResult)
@@ -442,6 +492,10 @@ Page({
           synthesizedAudioUrl: synthesizeResult
         })
 
+        this.setData({
+          'taskProgress.message': '声音克隆完成',
+          'taskProgress.progress': 100
+        })
         wx.hideLoading()
         wx.showToast({
           title: '声音克隆和合成完成！',
@@ -450,6 +504,9 @@ Page({
 
         // 关闭弹窗
         this.hideCloneModal()
+        
+        // 刷新队列统计
+        this.loadQueueStats()
 
       } else {
         throw new Error(preprocessResult.error || '声音训练失败')
@@ -457,14 +514,29 @@ Page({
 
     } catch (error) {
       console.error('声音克隆失败', error)
-      wx.hideLoading()
-      wx.showToast({
-        title: error.message || '提交失败，请重试',
-        icon: 'none'
+      this.setData({
+        'taskProgress.status': 'failed',
+        'taskProgress.message': '声音克隆失败'
       })
+      wx.hideLoading()
+      wx.showModal({
+        title: '声音克隆失败',
+        content: error.message || '提交失败，请重试',
+        showCancel: false
+      })
+    } finally {
+      this.setData({ isSubmitting: false })
+      // 延迟重置状态，让用户看到完成状态
+      setTimeout(() => {
+        this.setData({
+          currentTaskId: null,
+          isPolling: false,
+          'taskProgress.status': '',
+          'taskProgress.message': '',
+          'taskProgress.progress': 0
+        })
+      }, 2000)
     }
-
-    this.setData({ isSubmitting: false })
   },
 
   // 上传音频到云存储
@@ -490,47 +562,91 @@ Page({
     });
   },
 
-  // 调用本地Docker服务进行声音预处理和训练
+  // 调用本地Docker服务进行声音预处理和训练（异步任务）
   callPreprocessAPI(voice_url, speaker) {
-    return new Promise((resolve, reject) => {
-      wx.request({
-        url: 'http://127.0.0.1:18180/v1/preprocess_and_tran',
-        method: 'POST',
-        header: {
-          'content-type': 'application/json'
-        },
-        data: {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const result = await this.makeApiRequest('/api/tts/preprocess', {
           format: 'mp3',
           reference_audio: voice_url,
           lang: 'zh'
-        },
-        success: (res) => {
-          console.log('预处理API响应：', res)
-          if (res.statusCode === 200) {
-            resolve({ success: true, data: res.data })
-          } else {
-            resolve({ success: false, error: '预处理失败' })
-          }
-        },
-        fail: (error) => {
-          console.error('预处理API调用失败：', error)
-          resolve({ success: false, error: '网络请求失败' })
-        }
-      })
-    })
+        });
+        
+        // 异步任务，轮询状态
+        this.setData({
+          currentTaskId: result.taskId,
+          'taskProgress.status': 'processing',
+          'taskProgress.message': '正在处理声音克隆...'
+        });
+        
+        const finalResult = await this.pollTaskStatus(result.taskId, '声音克隆');
+        resolve({ success: true, data: finalResult });
+      } catch (error) {
+        resolve({ success: false, error: error.message || '预处理失败' });
+      }
+    });
   },
 
-  // 调用本地Docker服务合成音频
-  callInvokeAPI(speaker, text, referenceAudio, referenceText) {
+  // 通用API请求方法（带重试机制）
+  makeApiRequest(endpoint, data, method = 'POST') {
+    return this.makeApiRequestWithRetry(endpoint, data, method, 0);
+  },
+
+  // 带重试机制的API请求
+  makeApiRequestWithRetry(endpoint, data, method = 'POST', attempt = 0) {
     return new Promise((resolve, reject) => {
+      const url = `${this.data.apiConfig.baseUrl}${endpoint}`;
+      
       wx.request({
-        url: 'http://127.0.0.1:18180/v1/invoke',
-        method: 'POST',
+        url: url,
+        method: method,
         header: {
           'content-type': 'application/json'
         },
-        responseType: 'arraybuffer',
-        data: {
+        data: data,
+        timeout: this.data.apiConfig.timeout,
+        success: (res) => {
+          console.log(`API请求成功 ${endpoint} (尝试 ${attempt + 1}):`, res);
+          if (res.statusCode === 200) {
+            resolve(res.data);
+          } else {
+            this.handleApiError(endpoint, res.statusCode, attempt, resolve, reject, data, method);
+          }
+        },
+        fail: (error) => {
+          console.error(`API请求失败 ${endpoint} (尝试 ${attempt + 1}):`, error);
+          this.handleApiError(endpoint, 'network_error', attempt, resolve, reject, data, method, error);
+        }
+      });
+    });
+  },
+
+  // 处理API错误和重试逻辑
+  handleApiError(endpoint, errorCode, attempt, resolve, reject, data, method, originalError = null) {
+    if (attempt < this.data.apiConfig.retryAttempts) {
+      const delay = this.data.apiConfig.retryDelay * Math.pow(2, attempt); // 指数退避
+      console.log(`API请求失败，${delay}ms后重试 (${attempt + 1}/${this.data.apiConfig.retryAttempts})`);
+      
+      setTimeout(() => {
+        this.makeApiRequestWithRetry(endpoint, data, method, attempt + 1)
+          .then(resolve)
+          .catch(reject);
+      }, delay);
+    } else {
+      const errorMsg = originalError ? 
+        `网络请求失败: ${originalError.errMsg || '未知错误'}` : 
+        `API请求失败: ${errorCode}`;
+      reject(new Error(errorMsg));
+    }
+  },
+
+
+
+  // 调用本地Docker服务合成音频（异步任务）
+  callInvokeAPI(speaker, text, referenceAudio, referenceText) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const result = await this.makeApiRequest('/api/tts/invoke', {
           speaker: speaker,
           text: text,
           format: 'mp3',
@@ -545,27 +661,162 @@ Page({
           is_norm: 1,
           reference_audio: referenceAudio,
           reference_text: referenceText
-        },
-        success: (res) => {
-          console.log('合成API响应：', res)
-          console.log('响应状态码:', res.statusCode)
-          console.log('响应数据类型:', typeof res.data)
-          console.log('响应数据长度/大小:', res.data?.length || res.data?.byteLength || 'unknown')
-          console.log('响应头:', res.header)
+        });
+        
+        // 异步任务，轮询状态
+        this.setData({
+          currentTaskId: result.taskId,
+          'taskProgress.status': 'processing',
+          'taskProgress.message': '正在合成音频...'
+        });
+        
+        const finalResult = await this.pollTaskStatus(result.taskId, '音频合成');
+        
+        // 下载音频并上传到云存储
+        const cloudAudioUrl = await this.downloadAndUploadAudio(finalResult.audioUrl);
+        
+        resolve({ success: true, audioUrl: cloudAudioUrl });
+      } catch (error) {
+        resolve({ success: false, error: error.message || '音频合成失败' });
+      }
+    });
+  },
 
+  // 加载队列统计信息
+  async loadQueueStats() {
+    try {
+      const result = await this.getQueueStats()
+      if (result.success) {
+        this.setData({
+          queueStats: result.data
+        })
+        console.log('队列统计信息：', result.data)
+      }
+    } catch (error) {
+      console.error('加载队列统计信息失败：', error)
+    }
+  },
+
+  // 查询TTS任务状态
+  checkTTSTaskStatus(taskId) {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: `${this.data.apiConfig.baseUrl}/api/tts/status/${taskId}`,
+        method: 'GET',
+        header: {
+          'content-type': 'application/json'
+        },
+        timeout: this.data.apiConfig.timeout,
+        success: (res) => {
+          console.log('任务状态查询响应：', res);
           if (res.statusCode === 200) {
-            // 根据实际API响应格式，直接返回音频数据
-            resolve({ success: true, audioData: res.data })
+            resolve({ success: true, data: res.data });
           } else {
-            resolve({ success: false, error: '音频合成失败' })
+            resolve({ success: false, error: `查询任务状态失败: ${res.statusCode}` });
           }
         },
         fail: (error) => {
-          console.error('合成API调用失败：', error)
+          console.error('任务状态查询失败：', error);
+          resolve({ success: false, error: '网络请求失败' });
+        }
+      });
+    });
+  },
+
+  // 查询队列统计信息
+  getQueueStats() {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: 'http://127.0.0.1:3000/api/queue/stats',
+        method: 'GET',
+        header: {
+          'content-type': 'application/json'
+        },
+        success: (res) => {
+          console.log('队列统计查询响应：', res)
+          if (res.statusCode === 200) {
+            resolve({ success: true, data: res.data })
+          } else {
+            resolve({ success: false, error: '查询队列统计失败' })
+          }
+        },
+        fail: (error) => {
+          console.error('队列统计查询失败：', error)
           resolve({ success: false, error: '网络请求失败' })
         }
       })
     })
+  },
+
+  // 轮询检查任务状态（增强版）
+  async pollTaskStatus(taskId, taskType = 'TTS任务') {
+    let attempts = 0;
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
+    
+    while (attempts < this.data.apiConfig.maxPollAttempts) {
+      attempts++;
+      
+      // 更新进度
+      const progress = Math.min((attempts / this.data.apiConfig.maxPollAttempts) * 100, 95);
+      this.setData({
+        'taskProgress.progress': progress,
+        'taskProgress.message': `${taskType}进行中... (${attempts}/${this.data.apiConfig.maxPollAttempts})`
+      });
+      
+      try {
+        const result = await this.checkTTSTaskStatus(taskId);
+        consecutiveErrors = 0; // 重置错误计数
+        
+        if (result.success && result.data) {
+          const { status, result: taskResult, error, audioUrl } = result.data;
+          
+          if (status === 'completed') {
+            this.setData({
+              'taskProgress.status': 'completed',
+              'taskProgress.message': `${taskType}完成`,
+              'taskProgress.progress': 100
+            });
+            // 优先返回audioUrl，如果没有则返回taskResult
+            return { audioUrl: audioUrl || taskResult, result: taskResult };
+          } else if (status === 'failed') {
+            this.setData({
+              'taskProgress.status': 'failed',
+              'taskProgress.message': `${taskType}失败`
+            });
+            throw new Error(`${taskType}失败: ${error || '未知错误'}`);
+          } else if (status === 'pending' || status === 'processing') {
+            // 任务还在进行中，继续等待
+            console.log(`任务 ${taskId} 状态: ${status}, 等待中...`);
+            await new Promise(resolve => setTimeout(resolve, this.data.apiConfig.pollInterval));
+          } else {
+            throw new Error(`未知任务状态: ${status}`);
+          }
+        } else {
+          throw new Error(result.error || '查询任务状态失败');
+        }
+      } catch (error) {
+        consecutiveErrors++;
+        console.error(`轮询${taskType}状态失败 (${consecutiveErrors}/${maxConsecutiveErrors}):`, error);
+        
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          this.setData({
+            'taskProgress.status': 'failed',
+            'taskProgress.message': `${taskType}状态查询失败`
+          });
+          throw new Error(`${taskType}状态查询连续失败`);
+        }
+        
+        // 继续重试，增加延迟
+        await new Promise(resolve => setTimeout(resolve, this.data.apiConfig.pollInterval * consecutiveErrors));
+      }
+    }
+    
+    this.setData({
+      'taskProgress.status': 'failed',
+      'taskProgress.message': `${taskType}超时`
+    });
+    throw new Error(`${taskType}超时：任务执行时间过长`);
   },
 
   // 保存声音克隆记录到数据库
@@ -708,9 +959,9 @@ Page({
         voiceData.referenceText
       )
 
-      if (result.success && result.audioData) {
-        // 将合成的音频数据保存到云存储
-        const savedAudio = await this.saveAudioDataToCloud(result.audioData)
+      if (result.success) {
+        // 清除当前任务ID
+        this.setData({ currentTaskId: null })
 
         wx.hideLoading()
         wx.showToast({
@@ -718,7 +969,7 @@ Page({
           icon: 'success'
         })
 
-        return savedAudio
+        return result.audioUrl
       } else {
         throw new Error(result.error || '音频合成失败')
       }
@@ -732,81 +983,91 @@ Page({
     }
   },
 
-  // 保存音频数据到云存储
-  saveAudioDataToCloud: function (audioData) {
-    return new Promise((resolve, reject) => {
-      try {
-        // 生成临时文件名
-        const tempFileName = `synthesized_audio_${Date.now()}.mp3`;
-        const tempFilePath = `${wx.env.USER_DATA_PATH}/${tempFileName}`;
-
-        // 写入临时文件
-        wx.getFileSystemManager().writeFile({
-          filePath: tempFilePath,
-          data: audioData,
-          encoding: 'binary',
-          success: () => {
-            console.log('临时文件写入成功:', tempFilePath);
-
-            // 检查文件大小
-            wx.getFileSystemManager().stat({
-              path: tempFilePath,
-              success: (statRes) => {
-                console.log('临时文件大小:', statRes.size, '字节');
-              },
-              fail: (err) => {
-                console.warn('无法获取文件大小:', err);
-              }
-            });
-
-            // 上传到云存储
-            wx.cloud.uploadFile({
-              cloudPath: `synthesized_audio/${tempFileName}`,
-              filePath: tempFilePath,
-              success: (uploadResult) => {
-                console.log('音频上传成功:', uploadResult.fileID);
-
-                // 删除临时文件
-                wx.getFileSystemManager().unlink({
-                  filePath: tempFilePath,
-                  success: () => console.log('临时文件删除成功'),
-                  fail: (err) => console.warn('临时文件删除失败:', err)
-                });
-
-                // 获取临时下载链接
-                wx.cloud.getTempFileURL({
-                  fileList: [uploadResult.fileID],
-                  success: (tempUrlResult) => {
-                    if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
-                      resolve(tempUrlResult.fileList[0].tempFileURL);
-                    } else {
-                      reject(new Error('获取临时URL失败'));
-                    }
-                  },
-                  fail: reject
-                });
-              },
-              fail: (error) => {
-                console.error('音频上传失败:', error);
-                // 删除临时文件
-                wx.getFileSystemManager().unlink({
-                  filePath: tempFilePath,
-                  success: () => console.log('临时文件删除成功'),
-                  fail: (err) => console.warn('临时文件删除失败:', err)
-                });
-                reject(error);
-              }
-            });
-          },
-          fail: (error) => {
-            console.error('临时文件写入失败:', error);
-            reject(error);
-          }
-        });
-      } catch (error) {
-        console.error('处理音频数据时出错:', error);
-        reject(error);
-      }
+  // 重置任务状态
+  resetTaskStatus() {
+    this.setData({
+      currentTaskId: null,
+      isPolling: false,
+      'taskProgress.status': '',
+      'taskProgress.message': '',
+      'taskProgress.progress': 0
     });
-  }
+  },
+
+  // 显示任务进度提示
+  showTaskProgress(message, progress = 0) {
+    this.setData({
+      'taskProgress.message': message,
+      'taskProgress.progress': progress
+    });
+  },
+
+  // 显示错误提示
+  showError(message, title = '操作失败') {
+    wx.showModal({
+      title: title,
+      content: message,
+      showCancel: false,
+      confirmText: '确定'
+    });
+  },
+
+  // 显示成功提示
+  showSuccess(message) {
+    wx.showToast({
+      title: message,
+      icon: 'success',
+      duration: 2000
+    });
+  },
+
+  // 下载音频并上传到云存储
+   downloadAndUploadAudio(audioUrl) {
+     return new Promise(async (resolve, reject) => {
+       try {
+         // 如果audioUrl是相对路径，需要拼接完整URL
+         const fullAudioUrl = audioUrl.startsWith('/') ? 
+           `${this.data.apiConfig.baseUrl}${audioUrl}` : audioUrl;
+         
+         // 先请求接口获取真正的音频数据
+         const audioResponse = await new Promise((audioResolve, audioReject) => {
+           wx.request({
+             url: fullAudioUrl,
+             method: 'GET',
+             responseType: 'arraybuffer',
+             success: audioResolve,
+             fail: audioReject
+           });
+         });
+         
+         if (audioResponse.statusCode !== 200) {
+           throw new Error(`获取音频数据失败: ${audioResponse.statusCode}`);
+         }
+         
+         // 将ArrayBuffer转换为临时文件
+         const fs = wx.getFileSystemManager();
+         const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_audio_${Date.now()}.mp3`;
+         
+         fs.writeFileSync(tempFilePath, audioResponse.data);
+         
+         // 上传到云存储
+         const uploadResult = await wx.cloud.uploadFile({
+           cloudPath: `audio/tts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`,
+           filePath: tempFilePath
+         });
+         
+         // 清理临时文件
+         try {
+           fs.unlinkSync(tempFilePath);
+         } catch (cleanupError) {
+           console.warn('清理临时文件失败:', cleanupError);
+         }
+         
+         resolve(uploadResult.fileID);
+       } catch (error) {
+         console.error('下载并上传音频失败:', error);
+         reject(error);
+       }
+     });
+   }
 })
