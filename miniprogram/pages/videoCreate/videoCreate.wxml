@@ -110,7 +110,47 @@
     </checkbox-group>
     <view class="btn-container">
       <my-button type="outline" bindtap="prevStep">上一步</my-button>
-      <my-button type="primary" bindtap="onGenerateVideo">生成视频</my-button>
+      <my-button type="primary" bindtap="onGenerateVideo" disabled="{{isGenerating}}">{{isGenerating ? '生成中...' : '生成视频'}}</my-button>
     </view>
+    
+    <!-- 任务状态显示区域 -->
+     <view class="task-status-section" wx:if="{{videoTasks.length > 0}}">
+       <view class="section-header">
+         <text class="section-title">视频生成任务</text>
+         <button class="refresh-btn" bindtap="refreshTaskStatus" size="mini">刷新状态</button>
+       </view>
+       
+       <view class="task-list">
+         <view class="task-item" wx:for="{{videoTasks}}" wx:key="_id">
+           <view class="task-header">
+             <text class="task-time">{{item.created_at}}</text>
+             <view class="task-status-wrapper">
+               <text class="task-status {{item.status}}">{{item.status === 'completed' ? '已完成' : item.status === 'processing' ? '生成中' : '进行中'}}</text>
+               <text class="task-progress" wx:if="{{item.status === 'processing'}}">{{item.completed_tasks || 0}}/{{item.total_tasks || 0}}</text>
+             </view>
+           </view>
+           
+           <!-- 进度条 -->
+           <view class="progress-bar" wx:if="{{item.status === 'processing'}}">
+             <view class="progress-fill" style="width: {{item.progress || 0}}"></view>
+           </view>
+           
+           <view class="audio-results">
+             <view class="audio-item" wx:for="{{item.audio_results}}" wx:for-item="audio" wx:key="taskId">
+               <view class="audio-info">
+                 <text class="audio-type">{{audio.type}}</text>
+                 <text class="audio-text">{{audio.text}}</text>
+               </view>
+               <view class="audio-status">
+                 <text class="status-text {{audio.status}}">
+                   {{audio.status === 'completed' ? '✓' : audio.status === 'pending' ? '⏳' : audio.status === 'processing' ? '🔄' : '✗'}}
+                 </text>
+                 <button wx:if="{{audio.audioUrl}}" class="play-audio-btn" data-url="{{audio.audioUrl}}" bindtap="playGeneratedAudio" size="mini">播放</button>
+               </view>
+             </view>
+           </view>
+         </view>
+       </view>
+     </view>
   </view>
 </view>
