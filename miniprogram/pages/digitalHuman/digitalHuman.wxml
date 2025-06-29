@@ -68,7 +68,12 @@
 
   <!-- 历史记录 -->
   <view class="history-section">
-    <view class="section-title">我的数字人视频</view>
+    <view class="section-header">
+      <view class="section-title">我的数字人视频</view>
+      <my-button class="refresh-btn" type="outline" size="small" bindtap="refreshTaskStatus">
+        🔄 刷新状态
+      </my-button>
+    </view>
     
     <block wx:if="{{digitalHumanList.length > 0}}">
       <view class="video-list">
@@ -80,7 +85,13 @@
             <view class="video-meta">
               <text class="create-time">{{item.createTime}}</text>
               <view class="status-badge status-{{item.status}}">
-                <block wx:if="{{item.status === 'generating_audio'}}">
+                <block wx:if="{{item.status === 'pending'}}">
+                  <text>等待中</text>
+                </block>
+                <block wx:elif="{{item.status === 'processing'}}">
+                  <text>处理中</text>
+                </block>
+                <block wx:elif="{{item.status === 'generating_audio'}}">
                   <text>生成音频中</text>
                 </block>
                 <block wx:elif="{{item.status === 'generating_video'}}">
@@ -92,7 +103,17 @@
                 <block wx:elif="{{item.status === 'failed'}}">
                   <text>生成失败</text>
                 </block>
+                <block wx:elif="{{item.status === 'cancelled'}}">
+                  <text>已取消</text>
+                </block>
               </view>
+            </view>
+            
+            <!-- 任务操作按钮 -->
+            <view class="task-actions" wx:if="{{item.status === 'pending' || item.status === 'processing' || item.status === 'generating_audio' || item.status === 'generating_video'}}">
+              <my-button class="cancel-btn" type="outline" size="mini" bindtap="cancelTask" data-task-id="{{item.taskId}}">
+                取消任务
+              </my-button>
             </view>
           </view>
           
@@ -107,14 +128,25 @@
                 bindtap="previewVideo"
               ></video>
             </block>
-            <block wx:elif="{{item.status === 'generating_audio' || item.status === 'generating_video'}}">
-              <view class="loading-placeholder">
-                <text class="loading-text">生成中...</text>
-              </view>
-            </block>
+            <block wx:elif="{{item.status === 'pending' || item.status === 'processing' || item.status === 'generating_audio' || item.status === 'generating_video'}}">
+               <view class="loading-placeholder">
+                 <text class="loading-text">
+                   <block wx:if="{{item.status === 'pending'}}">等待中...</block>
+                   <block wx:elif="{{item.status === 'processing'}}">处理中...</block>
+                   <block wx:elif="{{item.status === 'generating_audio'}}">生成音频中...</block>
+                   <block wx:elif="{{item.status === 'generating_video'}}">合成视频中...</block>
+                 </text>
+               </view>
+             </block>
             <block wx:elif="{{item.status === 'failed'}}">
               <view class="error-placeholder">
                 <text class="error-text">生成失败</text>
+                <text class="error-detail" wx:if="{{item.errorMessage}}">{{item.errorMessage}}</text>
+              </view>
+            </block>
+            <block wx:elif="{{item.status === 'cancelled'}}">
+              <view class="cancelled-placeholder">
+                <text class="cancelled-text">任务已取消</text>
               </view>
             </block>
           </view>
