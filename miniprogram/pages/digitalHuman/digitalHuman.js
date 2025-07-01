@@ -13,7 +13,7 @@ Page({
     currentTaskId: '',
     taskStatus: 'idle', // idle, generating_audio, generating_video, completed, failed
     apiConfig: {
-      baseUrl: 'http://127.0.0.1:8080',
+      baseUrl: 'http://127.0.0.1:3000',
       timeout: 30000,
       retryAttempts: 3,
       retryDelay: 1000
@@ -162,21 +162,22 @@ Page({
     }
 
     this.setData({
-      isGenerating: true
+      isGenerating: true,
+      taskStatus: 'processing'
     })
 
     try {
       // 1. 上传视频到云存储
       const videoUrl = await this.uploadVideoToCloud()
 
-      // 2. 提交视频生成任务
-      const taskResult = await this.submitVideoGenerationTask(videoUrl)
+      // 2. 调用新的一体化接口
+      const taskId = await this.submitTTSToVideoTask(videoUrl)
 
       // 3. 保存任务记录到数据库
-      await this.saveTaskRecord(taskResult.taskId, videoUrl)
+      await this.saveTaskRecord(taskId, videoUrl)
 
       wx.showToast({
-        title: '任务已提交，请点击刷新查看状态',
+        title: '任务已提交，正在处理中...',
         icon: 'success'
       })
 
@@ -191,7 +192,8 @@ Page({
       })
     } finally {
       this.setData({
-        isGenerating: false
+        isGenerating: false,
+        taskStatus: 'idle'
       })
     }
   },
@@ -206,7 +208,24 @@ Page({
         filePath: this.data.videoFile.tempFilePath,
         success: res => {
           console.log('视频上传成功:', res)
-          resolve(res.fileID)
+          // 获取可直接访问的临时URL
+          wx.cloud.getTempFileURL({
+            fileList: [res.fileID],
+            success: urlRes => {
+              if (urlRes.fileList && urlRes.fileList.length > 0) {
+                const tempFileURL = urlRes.fileList[0].tempFileURL
+                console.log('获取临时URL成功:', tempFileURL)
+                resolve(tempFileURL)
+              } else {
+                console.error('获取临时URL失败:', urlRes)
+                reject(new Error('获取临时URL失败'))
+              }
+            },
+            fail: urlErr => {
+              console.error('获取临时URL失败:', urlErr)
+              reject(urlErr)
+            }
+          })
         },
         fail: err => {
           console.error('视频上传失败:', err)
@@ -216,20 +235,42 @@ Page({
     })
   },
 
-  // 提交视频生成任务
-  async submitVideoGenerationTask(videoUrl) {
+  // 提交TTS到视频的一体化任务
+  async submitTTSToVideoTask(videoUrl) {
     try {
-      const result = await this.makeApiRequest('/api/video/submit', {
-        video_url: videoUrl,
-        text_content: this.data.textContent,
-        voice_clone_id: this.data.voiceCloneRecord._id,
-        reference_audio: this.data.voiceCloneRecord.audio_url,
-        reference_text: this.data.voiceCloneRecord.reference_text
+      wx.showLoading({ title: '提交任务中...' })
+      
+      const result = await this.makeApiRequest('/api/tts-to-video/submit', {
+        ttsParams: {
+          speaker: this.data.voiceCloneRecord.speaker,
+          text: this.data.textContent,
+          format: 'mp3',
+          topP: 0.7,
+          max_new_tokens: 1024,
+          chunk_length: 100,
+          repetition_penalty: 1.2,
+          temperature: 0.7,
+          need_asr: false,
+          streaming: false,
+          is_fixed_seed: 0,
+          is_norm: 1,
+          reference_audio: this.data.voiceCloneRecord.audio_url,
+          reference_text: this.data.voiceCloneRecord.reference_text
+        },
+        videoParams: {
+          video_url: videoUrl,
+          chaofen: 0,
+          watermark_switch: 0,
+          pn: 1,
+          code: this.generateUUID()
+        }
       })
-
-      return result
+      
+      wx.hideLoading()
+      return result.taskId
     } catch (error) {
-      console.error('提交视频生成任务失败:', error)
+      wx.hideLoading()
+      console.error('提交TTS到视频任务失败:', error)
       throw error
     }
   },
@@ -246,7 +287,7 @@ Page({
           taskId: taskId,
           videoUrl: videoUrl,
           textContent: this.data.textContent,
-          status: 'pending',
+          status: 'processing',
           createTime: new Date(),
           voice_clone_id: this.data.voiceCloneRecord._id
         }
@@ -323,24 +364,24 @@ Page({
     }
   },
 
-  // 查询视频生成任务状态
-  async queryVideoTaskStatus(taskId) {
+  // 查询TTS到视频任务状态
+  async queryTTSToVideoTaskStatus(taskId) {
     try {
-      const result = await this.makeApiRequest(`/api/video/status/${taskId}`, null, 'GET')
+      const result = await this.makeApiRequest(`/api/tts-to-video/status/${taskId}`, null, 'GET')
       return result
     } catch (error) {
-      console.error('查询视频任务状态失败:', error)
+      console.error('查询TTS到视频任务状态失败:', error)
       throw error
     }
   },
 
-  // 取消视频生成任务
-  async cancelVideoTask(taskId) {
+  // 取消TTS到视频任务
+  async cancelTTSToVideoTask(taskId) {
     try {
-      const result = await this.makeApiRequest(`/api/video/cancel/${taskId}`, null, 'POST')
+      const result = await this.makeApiRequest(`/api/tts-to-video/cancel/${taskId}`, null, 'POST')
       return result
     } catch (error) {
-      console.error('取消视频任务失败:', error)
+      console.error('取消TTS到视频任务失败:', error)
       throw error
     }
   },
@@ -356,14 +397,14 @@ Page({
       const res = await db.collection('digital_humans')
         .where({
           user_id: app.globalData.userInfo._openid,
-          status: db.command.in(['pending', 'processing', 'generating_audio', 'generating_video'])
+          status: db.command.in(['failed', 'pending', 'processing', 'generating_audio', 'generating_video'])
         })
         .get()
-      
+      console.log("获取所有未完成的任务res: ", res)
       // 并发查询所有任务状态
       const statusPromises = res.data.map(async (task) => {
         try {
-          const statusResult = await this.queryVideoTaskStatus(task.taskId)
+          const statusResult = await this.queryTTSToVideoTaskStatus(task.taskId)
           
           if (statusResult.status !== task.status) {
             // 更新数据库中的任务状态
@@ -371,6 +412,7 @@ Page({
               data: {
                 status: statusResult.status,
                 finalVideoUrl: statusResult.video_url || task.finalVideoUrl,
+                audioUrl: statusResult.audio_url || task.audioUrl,
                 errorMessage: statusResult.error_message || task.errorMessage,
                 updateTime: new Date()
               }
@@ -381,6 +423,7 @@ Page({
             ...task,
             status: statusResult.status,
             finalVideoUrl: statusResult.video_url || task.finalVideoUrl,
+            audioUrl: statusResult.audio_url || task.audioUrl,
             errorMessage: statusResult.error_message || task.errorMessage
           }
         } catch (error) {
@@ -412,7 +455,7 @@ Page({
     }
 
     try {
-      await this.cancelVideoTask(taskId)
+      await this.cancelTTSToVideoTask(taskId)
       
       // 更新数据库状态
       const app = getApp()
@@ -470,195 +513,7 @@ Page({
     })
   },
 
-  // 调用本地视频合成API
-  callLocalVideoAPI(params) {
-    return new Promise((resolve, reject) => {
-      wx.request({
-        url: 'http://127.0.0.1:8383/easy/submit',
-        method: 'POST',
-        header: {
-          'content-type': 'application/json'
-        },
-        data: params,
-        success: (res) => {
-          console.log('本地视频合成API响应：', res)
-          if (res.statusCode === 200) {
-            resolve({ success: true, data: res.data })
-          } else {
-            resolve({ success: false, error: '视频合成提交失败' })
-          }
-        },
-        fail: (error) => {
-          console.error('本地视频合成API调用失败：', error)
-          resolve({ success: false, error: '网络请求失败' })
-        }
-      })
-    })
-  },
 
-  // 生成视频
-  async generateVideo(taskId, audioUrl, videoUrl) {
-    try {
-      wx.showLoading({ title: '提交视频合成...' })
-
-      // 调用本地视频合成API
-      const videoResult = await this.callLocalVideoAPI({
-        audio_url: audioUrl,
-        video_url: videoUrl,
-        code: taskId,
-        chaofen: 0,
-        watermark_switch: 0,
-        pn: 1
-      })
-
-      if (!videoResult.success) {
-        throw new Error(videoResult.error || '视频合成提交失败')
-      }
-
-      wx.hideLoading()
-
-      // 轮询查询结果
-      await this.pollVideoResult(taskId)
-
-    } catch (error) {
-      console.error('生成视频失败:', error)
-      wx.hideLoading()
-      await this.updateTaskRecord(taskId, {
-        status: 'failed',
-        errorMessage: error.message
-      })
-      throw error
-    }
-  },
-
-  // 查询本地视频合成结果
-  queryLocalVideoResult(taskCode) {
-    return new Promise((resolve, reject) => {
-      wx.request({
-        url: `http://127.0.0.1:8383/easy/query?code=${taskCode}`,
-        method: 'GET',
-        success: (res) => {
-          console.log('本地视频查询API响应：', res)
-          if (res.statusCode === 200) {
-            resolve({ success: true, data: res.data })
-          } else {
-            resolve({ success: false, error: '查询失败' })
-          }
-        },
-        fail: (error) => {
-          console.error('本地视频查询API调用失败：', error)
-          resolve({ success: false, error: '网络请求失败' })
-        }
-      })
-    })
-  },
-
-  // 轮询查询视频生成结果
-  async pollVideoResult(taskId) {
-    const maxAttempts = 120 // 最多查询60次
-    let attempts = 0
-
-    const poll = async () => {
-      attempts++
-
-      try {
-        const result = await this.queryLocalVideoResult(taskId)
-
-        if (!result.success) {
-          throw new Error(result.error || '查询失败')
-        }
-
-        const data = result.data
-        console.log(`第${attempts}次查询结果:`, data)
-
-        // 根据本地API的返回格式判断状态
-        if (data.data && data.data.status === 2 && data.data.result) {
-          // 视频生成完成，上传到云存储
-          wx.showLoading({ title: '上传视频到云端...' })
-
-          try {
-            const cloudVideoUrl = await this.uploadLocalVideoToCloud(data.data.result, taskId)
-
-            await this.updateTaskRecord(taskId, {
-              status: 'completed',
-              finalVideoUrl: cloudVideoUrl,
-              localVideoUrl: data.data.result // 保留本地路径作为备份
-            })
-
-            this.setData({
-              isGenerating: false,
-              taskStatus: 'completed'
-            })
-
-            wx.hideLoading()
-            wx.showToast({
-              title: '数字人视频生成成功',
-              icon: 'success'
-            })
-
-            // 刷新列表
-            this.getDigitalHumanList()
-          } catch (uploadError) {
-            console.error('视频上传失败:', uploadError)
-            wx.hideLoading()
-
-            // 即使上传失败，也保存本地路径
-            await this.updateTaskRecord(taskId, {
-              status: 'completed',
-              finalVideoUrl: data.data.result,
-              uploadError: uploadError.message
-            })
-
-            this.setData({
-              isGenerating: false,
-              taskStatus: 'completed'
-            })
-
-            wx.showToast({
-              title: '视频生成成功，但上传失败',
-              icon: 'none',
-              duration: 3000
-            })
-
-            // 刷新列表
-            this.getDigitalHumanList()
-          }
-
-        } else if (data.data && data.data.status == 0) {
-          throw new Error('视频生成失败')
-        } else if (data.data && data.data.status == 1) {
-          // 继续轮询
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 60000) // 60秒后再次查询
-          } else {
-            throw new Error('视频生成超时')
-          }
-        } else {
-          throw new Error('视频生成状态未知')
-        }
-
-      } catch (error) {
-        console.error('查询视频结果失败:', error)
-        await this.updateTaskRecord(taskId, {
-          status: 'failed',
-          errorMessage: error.message
-        })
-
-        this.setData({
-          isGenerating: false,
-          taskStatus: 'failed'
-        })
-
-        wx.showToast({
-          title: '视频生成失败',
-          icon: 'none'
-        })
-      }
-    }
-
-    // 开始轮询
-    poll()
-  },
 
 
 
@@ -757,6 +612,8 @@ Page({
       wx.stopPullDownRefresh()
     })
   },
+
+
 
   // 生成UUID
   generateUUID() {
