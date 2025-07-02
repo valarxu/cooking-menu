@@ -385,6 +385,72 @@ Page({
       throw error
     }
   },
+  // 下载文件并上传到云开发环境
+  async downloadFileToCloud(downloadUrl, fileName) {
+    return new Promise((resolve, reject) => {
+      const fullUrl = `${this.data.apiConfig.baseUrl}${downloadUrl}`
+      console.log('开始下载文件:', fullUrl)
+      
+      wx.downloadFile({
+        url: fullUrl,
+        success: (res) => {
+          if (res.statusCode === 200) {
+            console.log('文件下载成功:', res.tempFilePath)
+            
+            // 确定文件扩展名
+            const fileExtension = fileName.includes('.') ? fileName.split('.').pop() : 
+                                 (downloadUrl.includes('.mp4') ? 'mp4' : 
+                                  downloadUrl.includes('.mp3') ? 'mp3' : 'file')
+            
+            // 生成云存储路径
+            const cloudPath = `digital_human_files/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExtension}`
+            
+            // 上传到云开发环境
+            wx.cloud.uploadFile({
+              cloudPath: cloudPath,
+              filePath: res.tempFilePath,
+              success: uploadRes => {
+                console.log('文件上传到云开发成功:', uploadRes)
+                // 获取可直接访问的临时URL
+                wx.cloud.getTempFileURL({
+                  fileList: [uploadRes.fileID],
+                  success: urlRes => {
+                    if (urlRes.fileList && urlRes.fileList.length > 0) {
+                      const tempFileURL = urlRes.fileList[0].tempFileURL
+                      console.log('获取临时URL成功:', tempFileURL)
+                      resolve({
+                        fileID: uploadRes.fileID,
+                        tempFileURL: tempFileURL,
+                        cloudPath: cloudPath
+                      })
+                    } else {
+                      console.error('获取临时URL失败:', urlRes)
+                      reject(new Error('获取临时URL失败'))
+                    }
+                  },
+                  fail: urlErr => {
+                    console.error('获取临时URL失败:', urlErr)
+                    reject(urlErr)
+                  }
+                })
+              },
+              fail: uploadErr => {
+                console.error('文件上传到云开发失败:', uploadErr)
+                reject(uploadErr)
+              }
+            })
+          } else {
+            reject(new Error(`下载失败，状态码: ${res.statusCode}`))
+          }
+        },
+        fail: (err) => {
+          console.error('文件下载失败:', err)
+          reject(err)
+        }
+      })
+    })
+  },
+
   // 刷新任务状态
   async refreshTaskStatus() {
     wx.showLoading({ title: '刷新中...' })
@@ -393,46 +459,107 @@ Page({
       const app = getApp()
       const db = wx.cloud.database()
       
-      // 获取所有未完成的任务
+      // 获取当前用户的所有数字人任务，不区分状态
       const res = await db.collection('digital_humans')
         .where({
-          user_id: app.globalData.userInfo._openid,
-          status: db.command.in(['failed', 'pending', 'processing', 'generating_audio', 'generating_video'])
+          user_id: app.globalData.userInfo._openid
         })
         .get()
-      console.log("获取所有未完成的任务res: ", res)
-      // 并发查询所有任务状态
-      const statusPromises = res.data.map(async (task) => {
+      console.log("获取所有数字人任务res: ", res)
+      
+      // 处理所有任务
+      const taskPromises = res.data.map(async (task) => {
         try {
-          const statusResult = await this.queryTTSToVideoTaskStatus(task.taskId)
+          let updateData = {
+            updateTime: new Date()
+          }
           
-          if (statusResult.status !== task.status) {
-            // 更新数据库中的任务状态
-            await db.collection('digital_humans').doc(task._id).update({
-              data: {
-                status: statusResult.status,
-                finalVideoUrl: statusResult.video_url || task.finalVideoUrl,
-                audioUrl: statusResult.audio_url || task.audioUrl,
-                errorMessage: statusResult.error_message || task.errorMessage,
-                updateTime: new Date()
+          if (task.status === 'completed') {
+            // 如果任务已完成，但没有finalVideoUrl和finalAudioUrl，则下载文件
+            if (!task.finalVideoUrl && task.videoDownloadUrl) {
+              try {
+                const videoResult = await this.downloadFileToCloud(task.videoDownloadUrl, `video_${task.taskId}.mp4`)
+                updateData.finalVideoUrl = videoResult.tempFileURL
+                updateData.finalVideoFileID = videoResult.fileID
+                console.log('视频下载并上传到云开发完成:', videoResult)
+              } catch (error) {
+                console.error('视频下载失败:', error)
               }
-            })
+            }
+            
+            if (!task.finalAudioUrl && task.audioDownloadUrl) {
+              try {
+                const audioResult = await this.downloadFileToCloud(task.audioDownloadUrl, `audio_${task.taskId}.mp3`)
+                updateData.finalAudioUrl = audioResult.tempFileURL
+                updateData.finalAudioFileID = audioResult.fileID
+                console.log('音频下载并上传到云开发完成:', audioResult)
+              } catch (error) {
+                console.error('音频下载失败:', error)
+              }
+            }
+          } else {
+            // 如果任务状态不是completed，查询任务状态
+            try {
+              const statusResult = await this.queryTTSToVideoTaskStatus(task.taskId)
+              
+              // 更新任务状态和相关字段
+              updateData.status = statusResult.status
+              updateData.errorMessage = statusResult.error
+              
+              // 更新下载URL
+              if (statusResult.videoDownloadUrl) {
+                updateData.videoDownloadUrl = statusResult.videoDownloadUrl
+              }
+              if (statusResult.audioDownloadUrl) {
+                updateData.audioDownloadUrl = statusResult.audioDownloadUrl
+              }
+              
+              // 如果任务完成，尝试下载文件
+              if (statusResult.status === 'completed') {
+                if (statusResult.videoDownloadUrl && !task.finalVideoUrl) {
+                  try {
+                    const videoResult = await this.downloadFileToCloud(statusResult.videoDownloadUrl, `video_${task.taskId}.mp4`)
+                    updateData.finalVideoUrl = videoResult.tempFileURL
+                    updateData.finalVideoFileID = videoResult.fileID
+                    console.log('视频下载并上传到云开发完成:', videoResult)
+                  } catch (error) {
+                    console.error('视频下载失败:', error)
+                  }
+                }
+                
+                if (statusResult.audioDownloadUrl && !task.finalAudioUrl) {
+                  try {
+                    const audioResult = await this.downloadFileToCloud(statusResult.audioDownloadUrl, `audio_${task.taskId}.mp3`)
+                    updateData.finalAudioUrl = audioResult.tempFileURL
+                    updateData.finalAudioFileID = audioResult.fileID
+                    console.log('音频下载并上传到云开发完成:', audioResult)
+                  } catch (error) {
+                    console.error('音频下载失败:', error)
+                  }
+                }
+              }
+              
+              console.log(`任务${task.taskId}状态查询结果:`, statusResult)
+            } catch (error) {
+              console.error(`查询任务${task.taskId}状态失败:`, error)
+              // 查询失败时不更新状态，只更新时间
+            }
           }
           
-          return {
-            ...task,
-            status: statusResult.status,
-            finalVideoUrl: statusResult.video_url || task.finalVideoUrl,
-            audioUrl: statusResult.audio_url || task.audioUrl,
-            errorMessage: statusResult.error_message || task.errorMessage
+          // 如果有需要更新的数据，则更新数据库
+          if (Object.keys(updateData).length > 1) { // 除了updateTime还有其他字段
+            await db.collection('digital_humans').doc(task._id).update({
+              data: updateData
+            })
+            console.log(`任务${task.taskId}数据库更新完成:`, updateData)
           }
+          
         } catch (error) {
-          console.error(`查询任务${task.taskId}状态失败:`, error)
-          return task
+          console.error(`处理任务${task.taskId}失败:`, error)
         }
       })
       
-      await Promise.all(statusPromises)
+      await Promise.all(taskPromises)
       
       // 重新加载任务列表
       await this.getDigitalHumanList()
