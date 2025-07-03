@@ -45,20 +45,18 @@ Page({
     videoTasks: [], // 用户的视频生成任务列表
     isGenerating: false, // 是否正在生成视频
     currentAudio: null, // 当前播放的音频实例
-    pollingTimer: null, // 轮询定时器
+
     // API配置
     apiConfig: {
       baseUrl: 'http://127.0.0.1:3000',
       timeout: 30000,
-      pollInterval: 10000, // 轮询间隔（毫秒）
-      maxPollAttempts: 20, // 最大轮询次数（5分钟）
       retryAttempts: 3, // API重试次数
       retryDelay: 1000 // 重试延迟（毫秒）
     },
     // 预设文案数组
     textSegments: [
       {
-        "type": "人物出境",
+        "type": "人物出镜",
         "text": "担心小偷盯上你家老式防盗门？"
       },
       {
@@ -78,7 +76,7 @@ Page({
         "text": "下单就送价值599智能锁！全市免费上门量尺！"
       },
       {
-        "type": "人物出境",
+        "type": "人物出镜",
         "text": "专业安防师傅驻店，守护万家灯火20年！"
       }
     ]
@@ -116,17 +114,23 @@ Page({
     // 刷新用户视频生成任务
     this.loadUserVideoTasks();
     
-    // 检查是否有正在进行的任务，如果有则恢复轮询
-    setTimeout(() => {
-      this.checkAndResumePolling();
-    }, 1000);
+
   },
 
   onUnload() {
+    // 停止当前播放的音频
+    if (this.data.currentAudio) {
+      this.data.currentAudio.stop();
+    }
+    
     // 清理音频资源
     if (this.innerAudioContext) {
       this.innerAudioContext.destroy();
     }
+  },
+
+  onHide() {
+    this.stopAudio();
   },
   // 步骤切换
   nextStep() {
@@ -356,10 +360,10 @@ Page({
       // 保存批量任务记录到数据库
       await this.saveBatchVideoGenerationTask(batchResult.batchId, selectedVoice.voiceData, batchResult.tasks);
       
-      // 开始定时查询任务状态
-      this.startPollingBatchTaskStatus(batchResult.batchId);
-      
       wx.showToast({ title: '任务已提交，正在生成中...', icon: 'success' });
+      
+      // 刷新任务列表
+      await this.loadUserVideoTasks();
       
     } catch (error) {
       console.error('提交生成任务失败:', error);
@@ -377,6 +381,34 @@ Page({
     });
   },
 
+  // 获取数字人视频URL
+  async getDigitalHumanVideoUrl() {
+    try {
+      const app = getApp();
+      const db = wx.cloud.database();
+      
+      // 从digital_humans集合中获取该用户的一个数字人视频
+      const res = await db.collection('digital_humans')
+        .where({
+          user_id: app.globalData.userInfo._openid,
+          status: 'completed',
+          finalVideoUrl: db.command.exists(true)
+        })
+        .orderBy('createTime', 'desc')
+        .limit(1)
+        .get();
+      
+      if (res.data.length > 0) {
+        return res.data[0].finalVideoUrl;
+      } else {
+        throw new Error('未找到可用的数字人视频，请先在数字人页面生成视频');
+      }
+    } catch (error) {
+      console.error('获取数字人视频URL失败:', error);
+      throw error;
+    }
+  },
+
   // 批量提交音频生成任务（并发调用单个接口）
   async batchSubmitAudioTasks(voiceData) {
     const batchTaskId = this.generateUUID();
@@ -385,24 +417,14 @@ Page({
     // 准备任务数据并并发提交
     const submitPromises = [];
     
+    // 获取数字人视频URL（用于人物出镜类型）
+    let digitalHumanVideoUrl = null;
+    if (this.data.textSegments.some(segment => segment.type === '人物出镜')) {
+      digitalHumanVideoUrl = await this.getDigitalHumanVideoUrl();
+    }
+    
     for (let i = 0; i < this.data.textSegments.length; i++) {
       const segment = this.data.textSegments[i];
-      const taskData = {
-        speaker: this.generateUUID(), // 使用generateUUID生成新的speaker ID
-        text: segment.text,
-        format: 'mp3',
-        topP: 0.7,
-        max_new_tokens: 1024,
-        chunk_length: 100,
-        repetition_penalty: 1.2,
-        temperature: 0.7,
-        need_asr: false,
-        streaming: false,
-        is_fixed_seed: 0,
-        is_norm: 1,
-        reference_audio: voiceData.sampleUrl,
-        reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
-      };
       
       // 创建任务记录
       const task = {
@@ -412,23 +434,84 @@ Page({
         text: segment.text,
         status: 'pending',
         audioUrl: null,
+        videoUrl: null,
         error: null
       };
       
       tasks.push(task);
       
-      // 并发提交单个任务
-      const submitPromise = this.makeApiRequest('/api/tts/invoke', taskData)
-        .then(result => {
-          task.taskId = result.taskId;
-          task.status = 'processing';
-          return { index: i, taskId: result.taskId, success: true };
-        })
-        .catch(error => {
-          task.status = 'failed';
-          task.error = error.message;
-          return { index: i, error: error.message, success: false };
-        });
+      let submitPromise;
+      
+      if (segment.type === '人物出镜') {
+        // 调用数字人视频生成接口
+        const taskData = {
+          ttsParams: {
+            speaker: voiceData.id.replace('cloned_', ''), // 移除前缀获取真实speaker ID
+            text: segment.text,
+            format: 'mp3',
+            topP: 0.7,
+            max_new_tokens: 1024,
+            chunk_length: 100,
+            repetition_penalty: 1.2,
+            temperature: 0.7,
+            need_asr: false,
+            streaming: false,
+            is_fixed_seed: 0,
+            is_norm: 1,
+            reference_audio: voiceData.sampleUrl,
+            reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
+          },
+          videoParams: {
+            video_url: digitalHumanVideoUrl,
+            chaofen: 0,
+            watermark_switch: 0,
+            pn: 1,
+            code: this.generateUUID()
+          }
+        };
+        
+        submitPromise = this.makeApiRequest('/api/tts-to-video/submit', taskData)
+          .then(result => {
+            task.taskId = result.taskId;
+            task.status = 'processing';
+            return { index: i, taskId: result.taskId, success: true };
+          })
+          .catch(error => {
+            task.status = 'failed';
+            task.error = error.message;
+            return { index: i, error: error.message, success: false };
+          });
+      } else {
+        // 调用普通TTS接口
+        const taskData = {
+          speaker: voiceData.id.replace('cloned_', ''), // 移除前缀获取真实speaker ID
+          text: segment.text,
+          format: 'mp3',
+          topP: 0.7,
+          max_new_tokens: 1024,
+          chunk_length: 100,
+          repetition_penalty: 1.2,
+          temperature: 0.7,
+          need_asr: false,
+          streaming: false,
+          is_fixed_seed: 0,
+          is_norm: 1,
+          reference_audio: voiceData.sampleUrl,
+          reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
+        };
+        
+        submitPromise = this.makeApiRequest('/api/tts/invoke', taskData)
+          .then(result => {
+            task.taskId = result.taskId;
+            task.status = 'processing';
+            return { index: i, taskId: result.taskId, success: true };
+          })
+          .catch(error => {
+            task.status = 'failed';
+            task.error = error.message;
+            return { index: i, error: error.message, success: false };
+          });
+      }
       
       submitPromises.push(submitPromise);
     }
@@ -446,40 +529,6 @@ Page({
     return { batchId: batchTaskId, tasks };
   },
 
-  // 调用音频合成API（从voiceClone页面复制）
-  callInvokeAPI(speaker, text, referenceAudio, referenceText) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const result = await this.makeApiRequest('/api/tts/invoke', {
-          speaker: speaker,
-          text: text,
-          format: 'mp3',
-          topP: 0.7,
-          max_new_tokens: 1024,
-          chunk_length: 100,
-          repetition_penalty: 1.2,
-          temperature: 0.7,
-          need_asr: false,
-          streaming: false,
-          is_fixed_seed: 0,
-          is_norm: 1,
-          reference_audio: referenceAudio,
-          reference_text: referenceText
-        });
-
-        // 轮询任务状态
-        const finalResult = await this.pollTaskStatus(result.taskId, '音频合成');
-
-        // 下载音频并上传到云存储
-        const cloudAudioUrl = await this.downloadAndUploadAudio(finalResult.audioUrl);
-
-        resolve(cloudAudioUrl);
-      } catch (error) {
-        reject(new Error(error.message || '音频合成失败'));
-      }
-    });
-  },
-
   // 通用API请求方法
   makeApiRequest(endpoint, data, method = 'POST') {
     return this.makeApiRequestWithRetry(endpoint, data, method, 0);
@@ -490,10 +539,14 @@ Page({
     return new Promise((resolve, reject) => {
       let url = `${this.data.apiConfig.baseUrl}${endpoint}`;
       let requestData = data;
+      console.log("data: ", data)
+      console.log("method: ", method)
       
       // GET请求将参数拼接到URL中
       if (method === 'GET' && data) {
-        const params = new URLSearchParams(data).toString();
+        const params = Object.keys(data)
+          .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`)
+          .join('&');
         url += `?${params}`;
         requestData = undefined;
       }
@@ -539,43 +592,6 @@ Page({
         `API请求失败: ${errorCode}`;
       reject(new Error(errorMsg));
     }
-  },
-
-  // 轮询检查任务状态
-  async pollTaskStatus(taskId, taskType = 'TTS任务') {
-    let attempts = 0;
-
-    while (attempts < this.data.apiConfig.maxPollAttempts) {
-      attempts++;
-
-      try {
-        const result = await this.checkTTSTaskStatus(taskId);
-
-        if (result.success && result.data) {
-          const { status, audioUrl, result: taskResult } = result.data;
-
-          if (status === 'completed') {
-            return { audioUrl: audioUrl || taskResult, result: taskResult };
-          } else if (status === 'failed') {
-            throw new Error(`${taskType}失败`);
-          } else if (status === 'pending' || status === 'processing') {
-            await new Promise(resolve => setTimeout(resolve, this.data.apiConfig.pollInterval));
-          } else {
-            throw new Error(`未知任务状态: ${status}`);
-          }
-        } else {
-          throw new Error(result.error || '查询任务状态失败');
-        }
-      } catch (error) {
-        console.error(`轮询${taskType}状态失败:`, error);
-        if (attempts >= this.data.apiConfig.maxPollAttempts) {
-          throw error;
-        }
-        await new Promise(resolve => setTimeout(resolve, this.data.apiConfig.pollInterval));
-      }
-    }
-
-    throw new Error(`${taskType}超时`);
   },
 
   // 检查TTS任务状态
@@ -678,24 +694,6 @@ Page({
     });
   },
 
-  // 开始定时查询批量任务状态
-  startPollingBatchTaskStatus(batchTaskId) {
-    // 清除之前的定时器
-    if (this.data.pollingTimer) {
-      clearInterval(this.data.pollingTimer);
-    }
-    
-    // 立即查询一次
-    this.queryBatchTaskStatus(batchTaskId);
-    
-    // 设置定时查询（每3秒查询一次）
-    const timer = setInterval(() => {
-      this.queryBatchTaskStatus(batchTaskId);
-    }, 3000);
-    
-    this.setData({ pollingTimer: timer });
-  },
-
   // 查询批量任务状态（分别查询每个任务）
   async queryBatchTaskStatus(batchTaskId) {
     try {
@@ -725,42 +723,105 @@ Page({
         }
         
         try {
-          const statusResult = await this.checkTTSTaskStatus(audio.taskId);
-          if (statusResult.success && statusResult.data) {
-            const { status, audioUrl, result: taskResult } = statusResult.data;
+          let statusResult;
+          
+          // 根据任务类型选择不同的状态查询接口
+          if (audio.type === '人物出镜') {
+            // 查询数字人视频任务状态
+            statusResult = await this.queryTTSToVideoTaskStatus(audio.taskId);
             
-            if (status === 'completed') {
-              // 下载音频并上传到云存储
-              const cloudAudioUrl = await this.downloadAndUploadAudio(audioUrl || taskResult);
+            if (statusResult.status === 'completed') {
+              // 处理数字人视频任务完成
+              let finalVideoUrl = null;
+              let finalAudioUrl = null;
+              
+              if (statusResult.videoDownloadUrl) {
+                try {
+                  const videoResult = await this.downloadFileToCloud(statusResult.videoDownloadUrl, `video_${audio.taskId}.mp4`);
+                  finalVideoUrl = videoResult.tempFileURL;
+                } catch (error) {
+                  console.error('视频下载失败:', error);
+                }
+              }
+              
+              if (statusResult.audioDownloadUrl) {
+                try {
+                  const audioResult = await this.downloadFileToCloud(statusResult.audioDownloadUrl, `audio_${audio.taskId}.mp3`);
+                  finalAudioUrl = audioResult.tempFileURL;
+                } catch (error) {
+                  console.error('音频下载失败:', error);
+                }
+              }
+              
               return {
                 index,
                 audio: {
                   ...audio,
                   status: 'completed',
-                  audioUrl: cloudAudioUrl
+                  audioUrl: finalAudioUrl,
+                  videoUrl: finalVideoUrl
                 },
                 updated: true
               };
-            } else if (status === 'failed') {
+            } else if (statusResult.status === 'failed') {
               return {
                 index,
                 audio: {
                   ...audio,
                   status: 'failed',
-                  error: '任务执行失败'
+                  error: statusResult.error || '任务执行失败'
                 },
                 updated: true
               };
             } else {
-              // 仍在处理中，更新状态但不改变其他信息
               return {
                 index,
                 audio: {
                   ...audio,
-                  status: status
+                  status: statusResult.status
                 },
-                updated: audio.status !== status
+                updated: audio.status !== statusResult.status
               };
+            }
+          } else {
+            // 查询普通TTS任务状态
+            statusResult = await this.checkTTSTaskStatus(audio.taskId);
+            if (statusResult.success && statusResult.data) {
+              const { status, audioUrl, result: taskResult } = statusResult.data;
+              
+              if (status === 'completed') {
+                // 下载音频并上传到云存储
+                const cloudAudioUrl = await this.downloadAndUploadAudio(audioUrl || taskResult);
+                return {
+                  index,
+                  audio: {
+                    ...audio,
+                    status: 'completed',
+                    audioUrl: cloudAudioUrl
+                  },
+                  updated: true
+                };
+              } else if (status === 'failed') {
+                return {
+                  index,
+                  audio: {
+                    ...audio,
+                    status: 'failed',
+                    error: '任务执行失败'
+                  },
+                  updated: true
+                };
+              } else {
+                // 仍在处理中，更新状态但不改变其他信息
+                return {
+                  index,
+                  audio: {
+                    ...audio,
+                    status: status
+                  },
+                  updated: audio.status !== status
+                };
+              }
             }
           }
         } catch (error) {
@@ -809,9 +870,8 @@ Page({
         // 刷新本地任务列表
         await this.loadUserVideoTasks();
         
-        // 如果所有任务都完成了，停止轮询
+        // 如果所有任务都完成了
         if (overallStatus === 'completed' || overallStatus === 'failed') {
-          this.stopPolling();
           this.setData({ isGenerating: false });
           
           if (overallStatus === 'completed') {
@@ -828,13 +888,7 @@ Page({
 
 
 
-  // 停止轮询
-  stopPolling() {
-    if (this.data.pollingTimer) {
-      clearInterval(this.data.pollingTimer);
-      this.setData({ pollingTimer: null });
-    }
-  },
+
 
   // 加载用户视频生成任务
   async loadUserVideoTasks() {
@@ -865,6 +919,15 @@ Page({
       });
       
       this.setData({ videoTasks: tasksWithProgress });
+      
+      // 检查是否有未完成的任务需要查询状态
+      const incompleteTasks = tasksWithProgress.filter(task => task.status !== 'completed');
+      if (incompleteTasks.length > 0) {
+        // 只查询一次状态
+        for (const task of incompleteTasks) {
+          await this.queryBatchTaskStatus(task.batch_task_id);
+        }
+      }
     } catch (error) {
       console.error('加载视频生成任务失败:', error);
     }
@@ -873,40 +936,73 @@ Page({
   // 刷新任务状态
   async refreshTaskStatus() {
     wx.showLoading({ title: '刷新中...' });
-    await this.loadUserVideoTasks();
-    wx.hideLoading();
-    wx.showToast({ title: '刷新完成', icon: 'success' });
-  },
-
-  // 页面卸载时清理定时器
-  onUnload() {
-    this.stopPolling();
     
-    // 停止当前播放的音频
-    if (this.data.currentAudio) {
-      this.data.currentAudio.stop();
+    try {
+      await this.loadUserVideoTasks();
+      
+      wx.showToast({ title: '刷新完成', icon: 'success' });
+      
+    } catch (error) {
+      console.error('刷新任务状态失败:', error);
+      wx.showToast({ title: '刷新失败', icon: 'error' });
+    } finally {
+      wx.hideLoading();
     }
   },
 
-  // 页面隐藏时暂停轮询
-  onHide() {
-    this.stopPolling();
-  },
 
-  // 检查并恢复轮询正在进行的任务
-  checkAndResumePolling() {
-    const processingTasks = this.data.videoTasks.filter(task => 
-      task.status === 'processing' && task.batch_task_id
-    );
-    
-    if (processingTasks.length > 0 && !this.data.pollingTimer) {
-      // 恢复最新的处理中任务的轮询
-      const latestTask = processingTasks[0];
-      console.log('恢复轮询任务:', latestTask.batch_task_id);
-      this.setData({ isGenerating: true });
-      this.startPollingBatchTaskStatus(latestTask.batch_task_id);
+
+  // 查询数字人视频任务状态
+  async queryTTSToVideoTaskStatus(taskId) {
+    try {
+      const result = await this.makeApiRequest(`/api/tts-to-video/status/${taskId}`, null, 'GET');
+      return result;
+    } catch (error) {
+      console.error('查询数字人视频任务状态失败:', error);
+      throw error;
     }
   },
+
+  // 下载文件到云存储
+  async downloadFileToCloud(downloadUrl, fileName) {
+    try {
+      const fullUrl = `${this.data.apiConfig.baseUrl}${downloadUrl}`
+      console.log('开始下载文件:', fullUrl)
+      // 下载文件到本地临时路径
+      const downloadResult = await new Promise((resolve, reject) => {
+        wx.downloadFile({
+          url: fullUrl,
+          success: resolve,
+          fail: reject
+        });
+      });
+      
+      if (downloadResult.statusCode !== 200) {
+        throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
+      }
+      
+      // 上传到云存储
+      const uploadResult = await wx.cloud.uploadFile({
+        cloudPath: `generated_videos/${fileName}`,
+        filePath: downloadResult.tempFilePath
+      });
+      
+      // 获取临时URL
+      const tempUrlResult = await wx.cloud.getTempFileURL({
+        fileList: [uploadResult.fileID]
+      });
+      
+      return {
+        fileID: uploadResult.fileID,
+        tempFileURL: tempUrlResult.fileList[0].tempFileURL
+      };
+    } catch (error) {
+      console.error('下载文件到云存储失败:', error);
+      throw error;
+    }
+  },
+
+
 
   // 播放生成的音频
   playGeneratedAudio(e) {
