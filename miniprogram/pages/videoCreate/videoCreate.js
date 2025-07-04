@@ -392,14 +392,14 @@ Page({
         .where({
           user_id: app.globalData.userInfo._openid,
           status: 'completed',
-          finalVideoUrl: db.command.exists(true)
+          videoUrl: db.command.exists(true)
         })
         .orderBy('createTime', 'desc')
         .limit(1)
         .get();
       
       if (res.data.length > 0) {
-        return res.data[0].finalVideoUrl;
+        return res.data[0].videoUrl;
       } else {
         throw new Error('未找到可用的数字人视频，请先在数字人页面生成视频');
       }
@@ -446,7 +446,7 @@ Page({
         // 调用数字人视频生成接口
         const taskData = {
           ttsParams: {
-            speaker: voiceData.id.replace('cloned_', ''), // 移除前缀获取真实speaker ID
+            speaker: this.generateUUID(),
             text: segment.text,
             format: 'mp3',
             topP: 0.7,
@@ -484,7 +484,7 @@ Page({
       } else {
         // 调用普通TTS接口
         const taskData = {
-          speaker: voiceData.id.replace('cloned_', ''), // 移除前缀获取真实speaker ID
+          speaker: this.generateUUID(),
           text: segment.text,
           format: 'mp3',
           topP: 0.7,

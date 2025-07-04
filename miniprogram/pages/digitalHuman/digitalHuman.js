@@ -316,9 +316,11 @@ Page({
       
       // GET请求将参数拼接到URL中
       if (method === 'GET' && data) {
-        const params = new URLSearchParams(data).toString()
-        url += `?${params}`
-        requestData = undefined
+        const params = Object.keys(data)
+          .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`)
+          .join('&');
+        url += `?${params}`;
+        requestData = undefined;
       }
       
       wx.request({
