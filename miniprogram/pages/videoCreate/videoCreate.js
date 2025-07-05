@@ -337,11 +337,43 @@ Page({
     try {
       const db = wx.cloud.database();
       const app = getApp();
+      
+      // 先获取当前用户的所有产品信息
+      const productsRes = await db.collection('products')
+        .where({
+          _openid: app.globalData.userInfo._openid
+        })
+        .get();
+      
+      console.log('获取到的产品列表:', productsRes.data);
+      
+      // 创建产品ID到产品信息的映射
+      const productsMap = {};
+      productsRes.data.forEach(product => {
+        productsMap[product._id] = product;
+      });
+      
       const res = await db.collection('videos').where({ _openid: app.globalData.userInfo._openid }).get();
-      this.setData({ materialList: res.data });
+      
+      // 为视频添加产品信息
+      const videosWithProducts = res.data.map(video => {
+        const videoData = {
+          ...video,
+          productName: ''
+        };
+        
+        // 如果有关联产品，从产品映射中获取产品信息
+        if (video.relatedProduct && productsMap[video.relatedProduct]) {
+          videoData.productName = productsMap[video.relatedProduct].name;
+        }
+        
+        return videoData;
+      });
+      
+      this.setData({ materialList: videosWithProducts });
       
       // 素材加载完成后，为分镜设置默认视频
-      if (res.data.length > 0) {
+      if (videosWithProducts.length > 0) {
         this.setDefaultVideosForSegments();
       }
     } catch (e) {
@@ -1155,7 +1187,7 @@ Page({
         name: selectedVideo.name,
         url: selectedVideo.fileID,
         type: selectedVideo.type || '未分类',
-        product: selectedVideo.productName || '无'
+        productName: selectedVideo.productName || '无'
       };
 
       this.setData({
@@ -1191,7 +1223,7 @@ Page({
         name: selectedVideo.name,
         url: selectedVideo.fileID,
         type: selectedVideo.type || '未分类',
-        product: selectedVideo.productName || '无'
+        productName: selectedVideo.productName || '无'
       };
       
       this.setData({
@@ -1228,7 +1260,7 @@ Page({
             name: defaultVideo.name,
             url: defaultVideo.fileID,
             type: defaultVideo.type || '未分类',
-            product: defaultVideo.productName || '无'
+            productName: defaultVideo.productName || '无'
           }
         };
       }

@@ -103,12 +103,11 @@
         </view>
         
         <view class="segment-video-selector">
-          <view class="selector-label">选择视频素材：</view>
+          <view class="selector-label">视频素材：</view>
           
           <!-- 人物出镜类型显示数字人提示 -->
           <view wx:if="{{item.type === '人物出镜'}}" class="digital-human-tip">
             <view class="tip-content">
-              <text class="tip-icon">🤖</text>
               <text class="tip-text">将使用真人入镜的数字人视频</text>
             </view>
           </view>
@@ -121,7 +120,7 @@
               <view class="video-info">
                 <text class="video-name">{{item.selectedVideo.name}}</text>
                 <text class="video-type">类型：{{item.selectedVideo.type}}</text>
-                <text class="video-product">关联产品：{{item.selectedVideo.product}}</text>
+                <text class="video-product">关联产品：{{item.selectedVideo.productName}}</text>
               </view>
               <button class="reselect-btn" bindtap="showVideoSelector" data-index="{{index}}">重新选择</button>
             </view>
@@ -217,8 +216,10 @@
             
             <view class="grid-video-info">
               <text class="grid-video-name">{{item.name}}</text>
-              <text class="grid-video-type" wx:if="{{item.type}}">{{item.type}}</text>
-              <text class="grid-video-product" wx:if="{{item.productName}}">{{item.productName}}</text>
+              <view class="grid-video-meta">
+                <text class="grid-video-type" wx:if="{{item.type}}">类型：{{item.type}}</text>
+                <text class="grid-video-product" wx:if="{{item.productName}}">关联：{{item.productName}}</text>
+              </view>
             </view>
           </view>
         </view>

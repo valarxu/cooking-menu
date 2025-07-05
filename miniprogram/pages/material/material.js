@@ -58,6 +58,21 @@ Page({
       const _ = db.command
       console.log('开始获取视频列表，用户openid:', app.globalData.userInfo._openid)
       
+      // 先获取当前用户的所有产品信息
+      const productsRes = await db.collection('products')
+        .where({
+          _openid: app.globalData.userInfo._openid
+        })
+        .get()
+      
+      console.log('获取到的产品列表:', productsRes.data)
+      
+      // 创建产品ID到产品信息的映射
+      const productsMap = {}
+      productsRes.data.forEach(product => {
+        productsMap[product._id] = product
+      })
+      
       const res = await db.collection('videos')
         .where({
           _openid: app.globalData.userInfo._openid
@@ -68,7 +83,7 @@ Page({
       console.log('获取到的视频列表:', res.data)
       
       // 获取关联产品信息
-      const videoList = await this.getVideoListWithProducts(res.data)
+      const videoList = this.getVideoListWithProducts(res.data, productsMap)
       
       this.setData({
         videoList: videoList
@@ -86,8 +101,7 @@ Page({
   },
 
   // 获取视频列表及关联产品信息
-  async getVideoListWithProducts(videos) {
-    const db = wx.cloud.database()
+  getVideoListWithProducts(videos, productsMap) {
     const videoList = []
     
     for (let video of videos) {
@@ -97,18 +111,9 @@ Page({
         productName: ''
       }
       
-      // 如果有关联产品，获取产品信息
-      if (video.relatedProduct) {
-        try {
-          const productRes = await db.collection('products')
-            .doc(video.relatedProduct)
-            .get()
-          if (productRes.data) {
-            videoData.productName = productRes.data.name
-          }
-        } catch (err) {
-          console.error('获取产品信息失败：', err)
-        }
+      // 如果有关联产品，从产品映射中获取产品信息
+      if (video.relatedProduct && productsMap[video.relatedProduct]) {
+        videoData.productName = productsMap[video.relatedProduct].name
       }
       
       videoList.push(videoData)
