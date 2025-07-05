@@ -161,5 +161,21 @@ Page({
     wx.navigateTo({
       url: '/pages/uploadVideo/uploadVideo'
     })
-  }
+  },
+
+  // 修改视频
+  editVideo(e) {
+    const video = e.currentTarget.dataset.video
+    if (!video) {
+      wx.showToast({ title: '视频信息错误', icon: 'none' })
+      return
+    }
+    
+    // 跳转到编辑页面，传递视频信息
+    wx.navigateTo({
+      url: `/pages/uploadVideo/uploadVideo?mode=edit&videoId=${video._id}&name=${encodeURIComponent(video.name)}&type=${encodeURIComponent(video.type || '')}&relatedProduct=${video.relatedProduct || ''}`
+    })
+  },
+
+
 })

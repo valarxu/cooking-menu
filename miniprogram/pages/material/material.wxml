@@ -26,11 +26,13 @@
           show-center-play-btn="{{true}}"
           controls
         ></video>
-        <view class="video-info">
-          <text class="video-name">{{item.name}}</text>
-          <text class="video-type" wx:if="{{item.type}}">类型：{{item.type}}</text>
-          <text class="video-product" wx:if="{{item.productName}}">关联产品：{{item.productName}}</text>
-          <text class="upload-time">{{item.uploadTime}}</text>
+        <view class="video-info" data-video="{{item}}" bindtap="editVideo">
+          <view class="info-content">
+            <text class="video-name">{{item.name}}</text>
+            <text class="video-type" wx:if="{{item.type}}">类型：{{item.type}}</text>
+            <text class="video-product" wx:if="{{item.productName}}">关联产品：{{item.productName}}</text>
+            <text class="upload-time">{{item.uploadTime}}</text>
+          </view>
         </view>
       </view>
     </block>

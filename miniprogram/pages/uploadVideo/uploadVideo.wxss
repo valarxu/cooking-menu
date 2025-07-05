@@ -80,6 +80,25 @@
   color: #fff;
 }
 
+.opt-btn {
+  background-color: #6145FF;
+  color: #fff;
+  flex: 1;
+}
+
+.delete-row {
+  margin-top: 30rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.delete-btn {
+  background-color: #fff;
+  color: #ff4757;
+  border: 2rpx solid #ff4757;
+  width: 300rpx;
+}
+
 .picker-input {
   border: 1px solid #eee;
   border-radius: 8rpx;
@@ -160,4 +179,22 @@
   height: 50px;
   font-size: 32rpx;
   color: #333;
+}
+
+.submit-container {
+  margin-top: 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 40rpx; 
+  width: 344px;
+}
+
+.delete-btn {
+  background: #fff !important;
+  color: #ff4757 !important;
+  border: 2rpx solid #ff4757 !important;
+}
+
+.delete-btn:active {
+  background: #fff5f5 !important;
 }
