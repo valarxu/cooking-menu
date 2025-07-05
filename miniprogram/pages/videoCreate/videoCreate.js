@@ -53,31 +53,37 @@ Page({
       retryAttempts: 3, // API重试次数
       retryDelay: 1000 // 重试延迟（毫秒）
     },
-    // 预设文案数组
+    // 预设文案数组
     textSegments: [
       {
         "type": "人物出镜",
-        "text": "担心小偷盯上你家老式防盗门？"
+        "text": "担心小偷盯上你家老式防盗门？",
+        "selectedVideo": null
       },
       {
         "type": "产品外观",
-        "text": "新国标甲4级防盗门来报到！"
+        "text": "新国标甲4级防盗门来报到！",
+        "selectedVideo": null
       },
       {
         "type": "锁心",
-        "text": "304不锈钢主锁舌+12个隐藏锁点"
+        "text": "304不锈钢主锁舌+12个隐藏锁点",
+        "selectedVideo": null
       },
       {
         "type": "案例呈现",
-        "text": "熊孩子写作业再不怕被吵！"
+        "text": "熊孩子写作业再不怕被吵！",
+        "selectedVideo": null
       },
       {
         "type": "店铺环境",
-        "text": "下单就送价值599智能锁！全市免费上门量尺！"
+        "text": "下单就送价值599智能锁！全市免费上门量尺！",
+        "selectedVideo": null
       },
       {
         "type": "人物出镜",
-        "text": "专业安防师傅驻店，守护万家灯火20年！"
+        "text": "专业安防师傅驻店，守护万家灯火20年！",
+        "selectedVideo": null
       }
     ]
   },
@@ -113,7 +119,7 @@ Page({
     this.loadUserClonedVoices();
     // 刷新用户视频生成任务
     this.loadUserVideoTasks();
-    
+
 
   },
 
@@ -122,7 +128,7 @@ Page({
     if (this.data.currentAudio) {
       this.data.currentAudio.stop();
     }
-    
+
     // 清理音频资源
     if (this.innerAudioContext) {
       this.innerAudioContext.destroy();
@@ -356,15 +362,15 @@ Page({
     try {
       // 批量提交音频生成任务
       const batchResult = await this.batchSubmitAudioTasks(selectedVoice.voiceData);
-      
+
       // 保存批量任务记录到数据库
       await this.saveBatchVideoGenerationTask(batchResult.batchId, selectedVoice.voiceData, batchResult.tasks);
-      
+
       wx.showToast({ title: '任务已提交，正在生成中...', icon: 'success' });
-      
+
       // 刷新任务列表
       await this.loadUserVideoTasks();
-      
+
     } catch (error) {
       console.error('提交生成任务失败:', error);
       wx.showToast({ title: error.message || '提交失败', icon: 'none' });
@@ -386,7 +392,7 @@ Page({
     try {
       const app = getApp();
       const db = wx.cloud.database();
-      
+
       // 从digital_humans集合中获取该用户的一个数字人视频
       const res = await db.collection('digital_humans')
         .where({
@@ -397,7 +403,7 @@ Page({
         .orderBy('createTime', 'desc')
         .limit(1)
         .get();
-      
+
       if (res.data.length > 0) {
         return res.data[0].videoUrl;
       } else {
@@ -413,19 +419,19 @@ Page({
   async batchSubmitAudioTasks(voiceData) {
     const batchTaskId = this.generateUUID();
     const tasks = [];
-    
+
     // 准备任务数据并并发提交
     const submitPromises = [];
-    
+
     // 获取数字人视频URL（用于人物出镜类型）
     let digitalHumanVideoUrl = null;
     if (this.data.textSegments.some(segment => segment.type === '人物出镜')) {
       digitalHumanVideoUrl = await this.getDigitalHumanVideoUrl();
     }
-    
+
     for (let i = 0; i < this.data.textSegments.length; i++) {
       const segment = this.data.textSegments[i];
-      
+
       // 创建任务记录
       const task = {
         taskId: null, // 将在API调用后设置
@@ -437,11 +443,11 @@ Page({
         videoUrl: null,
         error: null
       };
-      
+
       tasks.push(task);
-      
+
       let submitPromise;
-      
+
       if (segment.type === '人物出镜') {
         // 调用数字人视频生成接口
         const taskData = {
@@ -469,7 +475,7 @@ Page({
             code: this.generateUUID()
           }
         };
-        
+
         submitPromise = this.makeApiRequest('/api/tts-to-video/submit', taskData)
           .then(result => {
             task.taskId = result.taskId;
@@ -499,7 +505,7 @@ Page({
           reference_audio: voiceData.sampleUrl,
           reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
         };
-        
+
         submitPromise = this.makeApiRequest('/api/tts/invoke', taskData)
           .then(result => {
             task.taskId = result.taskId;
@@ -512,19 +518,19 @@ Page({
             return { index: i, error: error.message, success: false };
           });
       }
-      
+
       submitPromises.push(submitPromise);
     }
-    
+
     // 等待所有任务提交完成
     const submitResults = await Promise.all(submitPromises);
-    
+
     // 检查是否有任务提交失败
     const failedTasks = submitResults.filter(result => !result.success);
     if (failedTasks.length > 0) {
       console.warn('部分任务提交失败:', failedTasks);
     }
-    
+
     // 返回批次ID和任务列表
     return { batchId: batchTaskId, tasks };
   },
@@ -541,7 +547,7 @@ Page({
       let requestData = data;
       console.log("data: ", data)
       console.log("method: ", method)
-      
+
       // GET请求将参数拼接到URL中
       if (method === 'GET' && data) {
         const params = Object.keys(data)
@@ -550,7 +556,7 @@ Page({
         url += `?${params}`;
         requestData = undefined;
       }
-      
+
       wx.request({
         url: url,
         method: method,
@@ -667,7 +673,7 @@ Page({
   async saveBatchVideoGenerationTask(batchTaskId, voiceData, tasks) {
     const app = getApp();
     const db = wx.cloud.database();
-    
+
     // 使用实际的任务数据
     const audioResults = tasks.map(task => ({
       type: task.taskType,
@@ -677,7 +683,7 @@ Page({
       status: task.status,
       error: task.error
     }));
-    
+
     const taskRecord = {
       user_id: app.globalData.userInfo._openid,
       batch_task_id: batchTaskId,
@@ -688,7 +694,7 @@ Page({
       total_tasks: tasks.length,
       completed_tasks: tasks.filter(task => task.status === 'completed').length
     };
-    
+
     await db.collection('video_generation_tasks').add({
       data: taskRecord
     });
@@ -699,7 +705,7 @@ Page({
     try {
       const app = getApp();
       const db = wx.cloud.database();
-      
+
       // 获取当前批次的任务记录
       const taskQuery = await db.collection('video_generation_tasks')
         .where({
@@ -707,34 +713,34 @@ Page({
           batch_task_id: batchTaskId
         })
         .get();
-      
+
       if (taskQuery.data.length === 0) {
         console.error('未找到批次任务记录:', batchTaskId);
         return;
       }
-      
+
       const taskRecord = taskQuery.data[0];
       const audioResults = taskRecord.audio_results;
-      
+
       // 并发查询所有任务的状态
       const statusPromises = audioResults.map(async (audio, index) => {
         if (!audio.taskId || audio.status === 'completed' || audio.status === 'failed') {
           return { index, audio, updated: false };
         }
-        
+
         try {
           let statusResult;
-          
+
           // 根据任务类型选择不同的状态查询接口
           if (audio.type === '人物出镜') {
             // 查询数字人视频任务状态
             statusResult = await this.queryTTSToVideoTaskStatus(audio.taskId);
-            
+
             if (statusResult.status === 'completed') {
               // 处理数字人视频任务完成
               let finalVideoUrl = null;
               let finalAudioUrl = null;
-              
+
               if (statusResult.videoDownloadUrl) {
                 try {
                   const videoResult = await this.downloadFileToCloud(statusResult.videoDownloadUrl, `video_${audio.taskId}.mp4`);
@@ -743,7 +749,7 @@ Page({
                   console.error('视频下载失败:', error);
                 }
               }
-              
+
               if (statusResult.audioDownloadUrl) {
                 try {
                   const audioResult = await this.downloadFileToCloud(statusResult.audioDownloadUrl, `audio_${audio.taskId}.mp3`);
@@ -752,7 +758,7 @@ Page({
                   console.error('音频下载失败:', error);
                 }
               }
-              
+
               return {
                 index,
                 audio: {
@@ -788,7 +794,7 @@ Page({
             statusResult = await this.checkTTSTaskStatus(audio.taskId);
             if (statusResult.success && statusResult.data) {
               const { status, audioUrl, result: taskResult } = statusResult.data;
-              
+
               if (status === 'completed') {
                 // 下载音频并上传到云存储
                 const cloudAudioUrl = await this.downloadAndUploadAudio(audioUrl || taskResult);
@@ -827,36 +833,36 @@ Page({
         } catch (error) {
           console.error(`查询任务${audio.taskId}状态失败:`, error);
         }
-        
+
         return { index, audio, updated: false };
       });
-      
+
       const statusResults = await Promise.all(statusPromises);
-      
+
       // 检查是否有状态更新
       const hasUpdates = statusResults.some(result => result.updated);
-      
+
       if (hasUpdates) {
         // 更新音频结果
         const updatedAudioResults = statusResults.map(result => result.audio);
-        
+
         // 计算完成的任务数量
-        const completedTasks = updatedAudioResults.filter(audio => 
+        const completedTasks = updatedAudioResults.filter(audio =>
           audio.status === 'completed'
         ).length;
-        
+
         // 判断整体状态
-        const failedTasks = updatedAudioResults.filter(audio => 
+        const failedTasks = updatedAudioResults.filter(audio =>
           audio.status === 'failed'
         ).length;
-        
+
         let overallStatus = 'processing';
         if (completedTasks === updatedAudioResults.length) {
           overallStatus = 'completed';
         } else if (completedTasks + failedTasks === updatedAudioResults.length) {
           overallStatus = 'failed';
         }
-        
+
         // 更新数据库记录
         await db.collection('video_generation_tasks').doc(taskRecord._id).update({
           data: {
@@ -866,14 +872,14 @@ Page({
             updated_at: new Date()
           }
         });
-        
+
         // 刷新本地任务列表
         await this.loadUserVideoTasks();
-        
+
         // 如果所有任务都完成了
         if (overallStatus === 'completed' || overallStatus === 'failed') {
           this.setData({ isGenerating: false });
-          
+
           if (overallStatus === 'completed') {
             wx.showToast({ title: '所有音频生成完成！', icon: 'success' });
           } else {
@@ -909,7 +915,7 @@ Page({
 
       // 为每个任务计算进度百分比
       const tasksWithProgress = res.data.map(task => {
-        const progress = task.total_tasks > 0 
+        const progress = task.total_tasks > 0
           ? Math.round((task.completed_tasks || 0) / task.total_tasks * 100)
           : 0;
         return {
@@ -917,9 +923,9 @@ Page({
           progress
         };
       });
-      
+
       this.setData({ videoTasks: tasksWithProgress });
-      
+
       // 检查是否有未完成的任务需要查询状态
       const incompleteTasks = tasksWithProgress.filter(task => task.status !== 'completed');
       if (incompleteTasks.length > 0) {
@@ -936,12 +942,12 @@ Page({
   // 刷新任务状态
   async refreshTaskStatus() {
     wx.showLoading({ title: '刷新中...' });
-    
+
     try {
       await this.loadUserVideoTasks();
-      
+
       wx.showToast({ title: '刷新完成', icon: 'success' });
-      
+
     } catch (error) {
       console.error('刷新任务状态失败:', error);
       wx.showToast({ title: '刷新失败', icon: 'error' });
@@ -976,22 +982,22 @@ Page({
           fail: reject
         });
       });
-      
+
       if (downloadResult.statusCode !== 200) {
         throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
       }
-      
+
       // 上传到云存储
       const uploadResult = await wx.cloud.uploadFile({
         cloudPath: `generated_videos/${fileName}`,
         filePath: downloadResult.tempFilePath
       });
-      
+
       // 获取临时URL
       const tempUrlResult = await wx.cloud.getTempFileURL({
         fileList: [uploadResult.fileID]
       });
-      
+
       return {
         fileID: uploadResult.fileID,
         tempFileURL: tempUrlResult.fileList[0].tempFileURL
@@ -1038,5 +1044,85 @@ Page({
 
     audio.play();
     this.setData({ currentAudio: audio });
-  }
+  },
+
+  // 显示视频选择弹窗
+  showVideoSelector(e) {
+    const segmentIndex = e.currentTarget.dataset.segmentIndex;
+    this.setData({
+      showVideoModal: true,
+      currentSegmentIndex: segmentIndex,
+      selectedModalVideoId: ''
+    });
+  },
+
+  // 隐藏视频选择弹窗
+  hideVideoSelector() {
+    this.setData({
+      showVideoModal: false,
+      selectedModalVideoId: '',
+      currentSegmentIndex: -1
+    });
+  },
+
+  // 阻止事件冒泡
+  stopPropagation() {
+    // 阻止点击弹窗内容时关闭弹窗
+  },
+
+  // 选择弹窗中的视频
+  selectModalVideo(e) {
+    const videoId = e.currentTarget.dataset.videoId;
+    this.setData({
+      selectedModalVideoId: videoId
+    });
+  },
+
+  // 确认视频选择
+  confirmVideoSelection() {
+    const { selectedModalVideoId, currentSegmentIndex, materialList, textSegments } = this.data;
+
+    if (!selectedModalVideoId || currentSegmentIndex === -1) {
+      return;
+    }
+
+    // 找到选中的视频
+    const selectedVideo = materialList.find(video => video._id === selectedModalVideoId);
+
+    if (selectedVideo) {
+      const updatedSegments = [...textSegments];
+      updatedSegments[currentSegmentIndex].selectedVideo = selectedVideo;
+
+      this.setData({
+        textSegments: updatedSegments
+      });
+    }
+
+    // 关闭弹窗
+    this.hideVideoSelector();
+  },
+
+  // 为非"人物出镜"类型的分镜设置默认视频
+  setDefaultVideosForSegments() {
+    const { textSegments, materialList } = this.data;
+
+    if (materialList.length === 0) {
+      return;
+    }
+
+    const updatedSegments = textSegments.map(segment => {
+      // 如果不是"人物出镜"类型且还没有选择视频，则设置默认视频
+      if (segment.type !== '人物出镜' && !segment.selectedVideo) {
+        return {
+          ...segment,
+          selectedVideo: materialList[0] // 默认选择第一个视频
+        };
+      }
+      return segment;
+    });
+
+    this.setData({
+      textSegments: updatedSegments
+    });
+  },
 })
