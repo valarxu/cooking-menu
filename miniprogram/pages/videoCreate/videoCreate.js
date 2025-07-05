@@ -1,6 +1,7 @@
 Page({
   data: {
     step: 1,
+    currentStep: 1, // 当前步骤，与step保持同步
     text: '',
     // 声音相关
     voiceList: [
@@ -45,6 +46,12 @@ Page({
     videoTasks: [], // 用户的视频生成任务列表
     isGenerating: false, // 是否正在生成视频
     currentAudio: null, // 当前播放的音频实例
+    
+    // 视频分镜选择相关变量
+    showVideoModal: false, // 是否显示视频选择弹窗
+    currentSegmentIndex: -1, // 当前选择视频的分镜索引
+    selectedModalVideoId: '', // 弹窗中选中的视频ID
+    videoModalLoading: false, // 视频弹窗加载状态
 
     // API配置
     apiConfig: {
@@ -103,6 +110,11 @@ Page({
         text: decodeURIComponent(options.text)
       })
     }
+    
+    // 延迟设置默认视频，确保素材库已加载
+    setTimeout(() => {
+      this.setDefaultVideosForSegments();
+    }, 1000);
   },
 
   onShow() {
@@ -140,10 +152,22 @@ Page({
   },
   // 步骤切换
   nextStep() {
-    if (this.data.step < 4) this.setData({ step: this.data.step + 1 });
+    if (this.data.step < 4) {
+      const newStep = this.data.step + 1;
+      this.setData({ 
+        step: newStep,
+        currentStep: newStep 
+      });
+    }
   },
   prevStep() {
-    if (this.data.step > 1) this.setData({ step: this.data.step - 1 });
+    if (this.data.step > 1) {
+      const newStep = this.data.step - 1;
+      this.setData({ 
+        step: newStep,
+        currentStep: newStep 
+      });
+    }
   },
   // 步骤一
   onTextInput(e) {
@@ -315,7 +339,13 @@ Page({
       const app = getApp();
       const res = await db.collection('videos').where({ _openid: app.globalData.userInfo._openid }).get();
       this.setData({ materialList: res.data });
+      
+      // 素材加载完成后，为分镜设置默认视频
+      if (res.data.length > 0) {
+        this.setDefaultVideosForSegments();
+      }
     } catch (e) {
+      console.error('加载素材库失败:', e);
       this.setData({ materialList: [] });
     }
   },
@@ -1046,31 +1076,56 @@ Page({
     this.setData({ currentAudio: audio });
   },
 
-  // 显示视频选择弹窗
+  // 显示视频选择弹窗
   showVideoSelector(e) {
-    const segmentIndex = e.currentTarget.dataset.segmentIndex;
+    const segmentIndex = e.currentTarget.dataset.index;
+    
+    // 检查是否有素材
+    if (this.data.materialList.length === 0) {
+      wx.showModal({
+        title: '提示',
+        content: '暂无视频素材，请先上传视频素材',
+        showCancel: true,
+        confirmText: '去上传',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: '/pages/material/material'
+            });
+          }
+        }
+      });
+      return;
+    }
+    
+    // 获取当前分镜已选择的视频ID
+    const currentSelectedVideoId = this.data.textSegments[segmentIndex]?.selectedVideo?._id || '';
+    
     this.setData({
       showVideoModal: true,
       currentSegmentIndex: segmentIndex,
-      selectedModalVideoId: ''
+      selectedModalVideoId: currentSelectedVideoId,
+      videoModalLoading: false
     });
   },
 
-  // 隐藏视频选择弹窗
+  // 隐藏视频选择弹窗
   hideVideoSelector() {
     this.setData({
       showVideoModal: false,
       selectedModalVideoId: '',
-      currentSegmentIndex: -1
+      currentSegmentIndex: -1,
+      videoModalLoading: false
     });
   },
 
-  // 阻止事件冒泡
+  // 阻止事件冒泡
   stopPropagation() {
-    // 阻止点击弹窗内容时关闭弹窗
+    // 阻止点击弹窗内容时关闭弹窗
   },
 
-  // 选择弹窗中的视频
+  // 选择弹窗中的视频
   selectModalVideo(e) {
     const videoId = e.currentTarget.dataset.videoId;
     this.setData({
@@ -1078,44 +1133,103 @@ Page({
     });
   },
 
-  // 确认视频选择
+  // 确认视频选择
   confirmVideoSelection() {
     const { selectedModalVideoId, currentSegmentIndex, materialList, textSegments } = this.data;
 
     if (!selectedModalVideoId || currentSegmentIndex === -1) {
+      wx.showToast({
+        title: '请选择视频',
+        icon: 'none'
+      });
       return;
     }
 
-    // 找到选中的视频
+    // 找到选中的视频
     const selectedVideo = materialList.find(video => video._id === selectedModalVideoId);
 
     if (selectedVideo) {
       const updatedSegments = [...textSegments];
-      updatedSegments[currentSegmentIndex].selectedVideo = selectedVideo;
+      updatedSegments[currentSegmentIndex].selectedVideo = {
+        _id: selectedVideo._id,
+        name: selectedVideo.name,
+        url: selectedVideo.fileID,
+        type: selectedVideo.type || '未分类',
+        product: selectedVideo.productName || '无'
+      };
 
       this.setData({
         textSegments: updatedSegments
       });
+      
+      wx.showToast({
+        title: '视频选择成功',
+        icon: 'success'
+      });
+    } else {
+      wx.showToast({
+        title: '视频不存在',
+        icon: 'none'
+      });
     }
 
-    // 关闭弹窗
+    // 关闭弹窗
     this.hideVideoSelector();
   },
+  
+  // 快速选择视频（直接点击视频项时）
+  quickSelectVideo(e) {
+    const videoId = e.currentTarget.dataset.videoId;
+    const { currentSegmentIndex, materialList, textSegments } = this.data;
+    
+    const selectedVideo = materialList.find(video => video._id === videoId);
+    
+    if (selectedVideo && currentSegmentIndex !== -1) {
+      const updatedSegments = [...textSegments];
+      updatedSegments[currentSegmentIndex].selectedVideo = {
+        _id: selectedVideo._id,
+        name: selectedVideo.name,
+        url: selectedVideo.fileID,
+        type: selectedVideo.type || '未分类',
+        product: selectedVideo.productName || '无'
+      };
+      
+      this.setData({
+        textSegments: updatedSegments,
+        showVideoModal: false,
+        selectedModalVideoId: '',
+        currentSegmentIndex: -1
+      });
+      
+      wx.showToast({
+        title: '视频选择成功',
+        icon: 'success'
+      });
+    }
+  },
 
-  // 为非"人物出镜"类型的分镜设置默认视频
+  // 为非"人物出镜"类型的分镜设置默认视频
   setDefaultVideosForSegments() {
     const { textSegments, materialList } = this.data;
 
     if (materialList.length === 0) {
+      console.log('素材列表为空，无法设置默认视频');
       return;
     }
 
     const updatedSegments = textSegments.map(segment => {
-      // 如果不是"人物出镜"类型且还没有选择视频，则设置默认视频
+      // 如果不是"人物出镜"类型且还没有选择视频，则设置默认视频
       if (segment.type !== '人物出镜' && !segment.selectedVideo) {
+        const defaultVideo = materialList[0];
         return {
           ...segment,
-          selectedVideo: materialList[0] // 默认选择第一个视频
+          selectedVideo: {
+            _id: defaultVideo._id,
+            name: defaultVideo.name,
+            url: defaultVideo.fileID,
+            type: defaultVideo.type || '未分类',
+            product: defaultVideo.productName || '无'
+          }
         };
       }
       return segment;
@@ -1124,5 +1238,7 @@ Page({
     this.setData({
       textSegments: updatedSegments
     });
+    
+    console.log('已为分镜设置默认视频');
   },
 })

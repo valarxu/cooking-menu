@@ -405,3 +405,530 @@
   padding: 4rpx 8rpx;
   font-size: 20rpx;
 }
+
+/* 视频分镜选择样式 */
+.segment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-bottom: 40rpx;
+}
+
+.segment-item {
+  background: white;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  border: 2rpx solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.segment-item:hover {
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.12);
+  border-color: #6C63FF;
+}
+
+.segment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+
+.segment-type {
+  background: linear-gradient(135deg, #6C63FF, #9C88FF);
+  color: white;
+  font-size: 24rpx;
+  font-weight: bold;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(108, 99, 255, 0.3);
+}
+
+.segment-index {
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+.segment-text {
+  margin-bottom: 20rpx;
+  padding: 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #6C63FF;
+}
+
+.segment-text text {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+  display: block;
+}
+
+.segment-video-selector {
+  margin-top: 16rpx;
+}
+
+.selector-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+/* 数字人提示样式 */
+.digital-human-tip {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.2);
+}
+
+.tip-content {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.tip-icon {
+  font-size: 32rpx;
+}
+
+.tip-text {
+  color: white;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+/* 视频选择器样式 */
+.video-selector {
+  border: 2rpx dashed #ddd;
+  border-radius: 12rpx;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.video-selector:hover {
+  border-color: #6C63FF;
+  background: #f8f7ff;
+}
+
+.selected-video {
+  padding: 16rpx;
+  background: white;
+}
+
+.preview-video {
+  width: 100%;
+  height: 200rpx;
+  border-radius: 8rpx;
+  margin-bottom: 12rpx;
+}
+
+.video-info {
+  margin-bottom: 12rpx;
+}
+
+.video-name {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 6rpx;
+  display: block;
+}
+
+.video-type, .video-product {
+  font-size: 22rpx;
+  color: #666;
+  margin-bottom: 4rpx;
+  display: block;
+}
+
+.reselect-btn {
+  background: #6C63FF;
+  color: white;
+  border: none;
+  border-radius: 8rpx;
+  padding: 8rpx 16rpx;
+  font-size: 24rpx;
+}
+
+.no-video {
+  padding: 40rpx 20rpx;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.no-video-tip {
+  margin-bottom: 16rpx;
+}
+
+.no-video-icon {
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.no-video-text {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.select-btn {
+  background: linear-gradient(135deg, #6C63FF, #9C88FF);
+  color: white;
+  border: none;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+  font-size: 26rpx;
+  box-shadow: 0 4rpx 12rpx rgba(108, 99, 255, 0.3);
+}
+
+/* 视频选择弹窗样式 */
+.video-selector-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.video-selector-modal.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 700rpx;
+  max-height: 80%;
+  background: white;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.3);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.video-selector-modal.show .modal-content {
+  transform: scale(1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  background: linear-gradient(135deg, #6C63FF, #9C88FF);
+  color: white;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.modal-close {
+  font-size: 40rpx;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 8rpx;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 24rpx;
+  max-height: 500rpx;
+  overflow-y: auto;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.grid-video-item {
+  border: 2rpx solid #f0f0f0;
+  border-radius: 12rpx;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.grid-video-item:hover {
+  border-color: #6C63FF;
+  box-shadow: 0 4rpx 12rpx rgba(108, 99, 255, 0.2);
+}
+
+.grid-video-item.selected {
+  border-color: #6C63FF;
+  box-shadow: 0 4rpx 16rpx rgba(108, 99, 255, 0.3);
+}
+
+.video-thumbnail {
+  position: relative;
+  height: 160rpx;
+  overflow: hidden;
+}
+
+.thumbnail-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.select-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(108, 99, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-icon {
+  font-size: 48rpx;
+  color: white;
+  font-weight: bold;
+}
+
+.grid-video-info {
+  padding: 12rpx;
+  background: white;
+}
+
+.grid-video-name {
+  font-size: 24rpx;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 4rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-video-type, .grid-video-product {
+  font-size: 20rpx;
+  color: #666;
+  margin-bottom: 2rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx 32rpx;
+  background: #f8f9fa;
+  border-top: 1rpx solid #eee;
+}
+
+.cancel-btn, .confirm-btn {
+  flex: 1;
+  padding: 16rpx 0;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.cancel-btn:hover {
+  background: #e0e0e0;
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #6C63FF, #9C88FF);
+  color: white;
+  box-shadow: 0 4rpx 12rpx rgba(108, 99, 255, 0.3);
+}
+
+.confirm-btn:disabled {
+  background: #ccc;
+  box-shadow: none;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  box-shadow: 0 6rpx 16rpx rgba(108, 99, 255, 0.4);
+}
+
+/* 无素材状态样式 */
+.no-material {
+  padding: 60rpx 40rpx;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border: 2rpx dashed #ddd;
+}
+
+.no-material-text {
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+/* 加载状态样式 */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12rpx;
+}
+
+.loading-spinner {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #6C63FF;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 响应式优化 */
+@media (max-width: 750rpx) {
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 20rpx;
+  }
+  
+  .segment-item {
+    padding: 20rpx;
+  }
+  
+  .segment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8rpx;
+  }
+}
+
+/* 动画效果优化 */
+.segment-item {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.grid-video-item {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 按钮点击效果 */
+.select-btn:active,
+.reselect-btn:active,
+.confirm-btn:active {
+  transform: scale(0.98);
+}
+
+/* 视频预览优化 */
+.preview-video {
+  background: #000;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.thumbnail-video {
+  background: #f5f5f5;
+  transition: transform 0.3s ease;
+}
+
+.grid-video-item:hover .thumbnail-video {
+  transform: scale(1.05);
+}
+
+/* 选中状态增强 */
+.grid-video-item.selected {
+  transform: scale(1.02);
+}
+
+.select-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* 提示文本样式优化 */
+.tip-text {
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.1);
+}
+
+.no-video-text {
+  opacity: 0.8;
+}
+
+/* 滚动条样式 */
+.modal-body::-webkit-scrollbar {
+  width: 6rpx;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3rpx;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3rpx;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
