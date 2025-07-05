@@ -110,11 +110,6 @@ Page({
         text: decodeURIComponent(options.text)
       })
     }
-    
-    // 延迟设置默认视频，确保素材库已加载
-    setTimeout(() => {
-      this.setDefaultVideosForSegments();
-    }, 1000);
   },
 
   onShow() {
@@ -1164,50 +1159,6 @@ Page({
       selectedModalVideoId: videoId
     });
   },
-
-  // 确认视频选择
-  confirmVideoSelection() {
-    const { selectedModalVideoId, currentSegmentIndex, materialList, textSegments } = this.data;
-
-    if (!selectedModalVideoId || currentSegmentIndex === -1) {
-      wx.showToast({
-        title: '请选择视频',
-        icon: 'none'
-      });
-      return;
-    }
-
-    // 找到选中的视频
-    const selectedVideo = materialList.find(video => video._id === selectedModalVideoId);
-
-    if (selectedVideo) {
-      const updatedSegments = [...textSegments];
-      updatedSegments[currentSegmentIndex].selectedVideo = {
-        _id: selectedVideo._id,
-        name: selectedVideo.name,
-        url: selectedVideo.fileID,
-        type: selectedVideo.type || '未分类',
-        productName: selectedVideo.productName || '无'
-      };
-
-      this.setData({
-        textSegments: updatedSegments
-      });
-      
-      wx.showToast({
-        title: '视频选择成功',
-        icon: 'success'
-      });
-    } else {
-      wx.showToast({
-        title: '视频不存在',
-        icon: 'none'
-      });
-    }
-
-    // 关闭弹窗
-    this.hideVideoSelector();
-  },
   
   // 快速选择视频（直接点击视频项时）
   quickSelectVideo(e) {
@@ -1249,10 +1200,31 @@ Page({
       return;
     }
 
+    // 按上传时间降序排序素材列表（最新的在前面）
+    const sortedMaterialList = [...materialList].sort((a, b) => {
+      const timeA = new Date(a.uploadTime || 0).getTime();
+      const timeB = new Date(b.uploadTime || 0).getTime();
+      return timeB - timeA;
+    });
+
     const updatedSegments = textSegments.map(segment => {
       // 如果不是"人物出镜"类型且还没有选择视频，则设置默认视频
       if (segment.type !== '人物出镜' && !segment.selectedVideo) {
-        const defaultVideo = materialList[0];
+        let defaultVideo = null;
+        
+        // 优先寻找type一致且时间最近的视频
+        const matchingTypeVideos = sortedMaterialList.filter(video => 
+          video.type === segment.type
+        );
+        
+        if (matchingTypeVideos.length > 0) {
+          // 如果有type一致的视频，选择最新的
+          defaultVideo = matchingTypeVideos[0];
+        } else {
+          // 如果没有type一致的视频，选择最新的视频
+          defaultVideo = sortedMaterialList[0];
+        }
+        
         return {
           ...segment,
           selectedVideo: {
