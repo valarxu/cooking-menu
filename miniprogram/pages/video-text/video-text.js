@@ -383,9 +383,9 @@ Page({
           duration: 1000
         })
         
-        // 使用switchTab跳转到tabBar页面
+        // 跳转到视频创建页面
         setTimeout(() => {
-          wx.switchTab({
+          wx.navigateTo({
             url: '/pages/videoCreate/videoCreate'
           })
         }, 1000)

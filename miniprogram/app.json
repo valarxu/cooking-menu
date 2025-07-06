@@ -2,6 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/videoCreate/videoCreate",
+    "pages/videoCreateHome/videoCreateHome",
+    "pages/videoTaskHistory/videoTaskHistory",
     "pages/textExtract/textExtract",
     "pages/mine/mine",
     "pages/aiAssistant/aiAssistant",
@@ -35,7 +37,7 @@
         "selectedIconPath": "/images/tabbar/home-active.png"
       },
       {
-        "pagePath": "pages/videoCreate/videoCreate",
+        "pagePath": "pages/videoCreateHome/videoCreateHome",
         "text": "视频创作",
         "iconPath": "/images/tabbar/video.png",
         "selectedIconPath": "/images/tabbar/video-active.png"

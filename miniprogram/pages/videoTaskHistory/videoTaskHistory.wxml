@@ -1,0 +1,11 @@
+<view class="container">
+  <view class="page-title">历史生成记录</view>
+  
+  <view class="content">
+    <view class="empty-state">
+      <image src="/images/empty-product.png" class="empty-icon" mode="aspectFit"></image>
+      <view class="empty-text">暂无生成记录</view>
+      <view class="empty-desc">您还没有创建过视频生成任务</view>
+    </view>
+  </view>
+</view>

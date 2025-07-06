@@ -123,7 +123,7 @@ Page({
   // 跳转到视频创作tab
   goToVideoCreateTab() {
     wx.switchTab({
-      url: '/pages/videoCreate/videoCreate'
+      url: '/pages/videoCreateHome/videoCreateHome'
     })
   },
 

@@ -1,0 +1,33 @@
+<view class="container">
+  <view class="page-title">视频创作</view>
+  
+  <view class="card-container">
+    <!-- 新建视频生成任务卡片 -->
+    <view class="card" bindtap="navigateToCreateVideo">
+      <view class="card-icon">
+        <image src="/images/icon/video-create.png" class="icon" mode="aspectFit"></image>
+      </view>
+      <view class="card-content">
+        <view class="card-title">新建视频生成任务</view>
+        <view class="card-desc">创建新的视频内容，支持AI生成</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.png" class="arrow" mode="aspectFit"></image>
+      </view>
+    </view>
+    
+    <!-- 历史生成记录卡片 -->
+    <view class="card" bindtap="navigateToHistory">
+      <view class="card-icon">
+        <image src="/images/icon/history.png" class="icon" mode="aspectFit"></image>
+      </view>
+      <view class="card-content">
+        <view class="card-title">历史生成记录</view>
+        <view class="card-desc">查看之前的视频生成任务</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.png" class="arrow" mode="aspectFit"></image>
+      </view>
+    </view>
+  </view>
+</view>
