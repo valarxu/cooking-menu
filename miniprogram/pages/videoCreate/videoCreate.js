@@ -681,6 +681,89 @@ Page({
     });
   },
 
+  // 调用视频工作流
+  async callVideoWorkflow(audio, voiceUrl) {
+    try {
+      // 获取视频的临时URL
+      let videoTempUrl = audio.videoUrl;
+      if (audio.videoUrl && !audio.videoUrl.startsWith('http')) {
+        // 如果是fileID，需要获取临时URL
+        const tempUrlResult = await wx.cloud.getTempFileURL({
+          fileList: [audio.videoUrl]
+        });
+        videoTempUrl = tempUrlResult.fileList[0].tempFileURL;
+      }
+
+      const result = await wx.cloud.callFunction({
+        name: 'callCozeWorkflow',
+        data: {
+          workflow_id: '7519489014413770764',
+          parameters: {
+            video: videoTempUrl,   // 分镜选择的视频临时URL
+            text: audio.text,      // 分镜的文本
+            voice: voiceUrl,       // 音频url, TTS生成的
+            voice_type: 'clone'    // 固定值
+          },
+          is_async: true
+        }
+      });
+
+      if (result.result.success) {
+        return {
+          executeId: result.result.data.execute_id
+        };
+      } else {
+        throw new Error(result.result.error || '工作流调用失败');
+      }
+    } catch (error) {
+      console.error('调用工作流失败:', error);
+      throw error;
+    }
+  },
+
+  // 查询工作流状态
+  async queryWorkflowStatus(executeId) {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'queryCozeWorkflow',
+        data: {
+          execute_id: executeId,
+          workflow_id: '7519489014413770764'
+        }
+      });
+
+      if (result.result.success) {
+        const status = result.result.data.data[0].execute_status;
+        let finalVideoUrl = null;
+        
+        if (status === 'Success') {
+          // 解析工作流输出结果
+          try {
+            const outputData = JSON.parse(result.result.data.data[0].output);
+            const outputContent = JSON.parse(outputData.Output);
+            finalVideoUrl = outputContent.output.trim();
+            // 移除可能的markdown格式
+            if (finalVideoUrl.startsWith('`') && finalVideoUrl.endsWith('`')) {
+              finalVideoUrl = finalVideoUrl.slice(1, -1);
+            }
+          } catch (parseError) {
+            console.error('解析工作流输出失败:', parseError);
+          }
+        }
+        
+        return {
+          status: status,
+          finalVideoUrl: finalVideoUrl
+        };
+      } else {
+        throw new Error(result.result.error || '查询工作流状态失败');
+      }
+    } catch (error) {
+      console.error('查询工作流状态失败:', error);
+      throw error;
+    }
+  },
+
   // 下载音频并上传到云存储
   downloadAndUploadAudio(audioUrl) {
     return new Promise(async (resolve, reject) => {
@@ -718,7 +801,15 @@ Page({
           console.warn('清理临时文件失败:', cleanupError);
         }
 
-        resolve(uploadResult.fileID);
+        // 获取临时URL
+        const tempUrlResult = await wx.cloud.getTempFileURL({
+          fileList: [uploadResult.fileID]
+        });
+
+        resolve({
+          fileID: uploadResult.fileID,
+          tempFileURL: tempUrlResult.fileList[0].tempFileURL
+        });
       } catch (error) {
         console.error('下载并上传音频失败:', error);
         reject(error);
@@ -732,14 +823,18 @@ Page({
     const db = wx.cloud.database();
 
     // 使用实际的任务数据
-    const audioResults = tasks.map(task => ({
-      type: task.taskType,
-      text: task.text,
-      audioUrl: task.audioUrl,
-      taskId: task.taskId,
-      status: task.status,
-      error: task.error
-    }));
+    const audioResults = tasks.map((task, index) => {
+      const segment = this.data.textSegments[index];
+      return {
+        type: task.taskType,
+        text: task.text,
+        audioUrl: task.audioUrl,
+        taskId: task.taskId,
+        status: task.status,
+        error: task.error,
+        videoUrl: segment.selectedVideo ? segment.selectedVideo.url : null
+      };
+    });
 
     const taskRecord = {
       user_id: app.globalData.userInfo._openid,
@@ -853,17 +948,91 @@ Page({
               const { status, audioUrl, result: taskResult } = statusResult.data;
 
               if (status === 'completed') {
-                // 下载音频并上传到云存储
-                const cloudAudioUrl = await this.downloadAndUploadAudio(audioUrl || taskResult);
-                return {
-                  index,
-                  audio: {
-                    ...audio,
-                    status: 'completed',
-                    audioUrl: cloudAudioUrl
-                  },
-                  updated: true
-                };
+                // 如果TTS任务完成但还没有工作流ID，需要调用工作流
+                console.log("TTS任务完成audio: ", audio)
+                if (!audio.workflowExecuteId) {
+                  try {
+                    // 下载音频并上传到云存储
+                    const audioResult = await this.downloadAndUploadAudio(audioUrl || taskResult);
+                    
+                    // 调用工作流
+                    const workflowResult = await this.callVideoWorkflow(audio, audioResult.tempFileURL);
+                    
+                    return {
+                      index,
+                      audio: {
+                        ...audio,
+                        status: 'workflow_processing',
+                        audioUrl: audioResult.fileID,
+                        audioTempUrl: audioResult.tempFileURL,
+                        workflowExecuteId: workflowResult.executeId
+                      },
+                      updated: true
+                    };
+                  } catch (error) {
+                    console.error('调用工作流失败:', error);
+                    return {
+                      index,
+                      audio: {
+                        ...audio,
+                        status: 'failed',
+                        error: '工作流调用失败'
+                      },
+                      updated: true
+                    };
+                  }
+                } else {
+                  // 如果已有工作流ID，查询工作流状态
+                  try {
+                    const workflowResult = await this.queryWorkflowStatus(audio.workflowExecuteId);
+                    
+                    if (workflowResult.status === 'Success') {
+                      // 工作流完成，下载并保存最终视频
+                      let finalVideoUrl = null;
+                      if (workflowResult.finalVideoUrl) {
+                        try {
+                          const videoResult = await this.downloadDirectUrlToCloud(workflowResult.finalVideoUrl);
+                          finalVideoUrl = videoResult.fileID;
+                        } catch (downloadError) {
+                          console.error('下载最终视频失败:', downloadError);
+                        }
+                      }
+                      
+                      return {
+                        index,
+                        audio: {
+                          ...audio,
+                          status: 'completed',
+                          finalVideoUrl: finalVideoUrl
+                        },
+                        updated: true
+                      };
+                    } else if (workflowResult.status === 'Fail') {
+                      return {
+                        index,
+                        audio: {
+                          ...audio,
+                          status: 'failed',
+                          error: '工作流执行失败'
+                        },
+                        updated: true
+                      };
+                    } else {
+                      // 工作流仍在运行
+                      return {
+                        index,
+                        audio: {
+                          ...audio,
+                          status: 'workflow_processing'
+                        },
+                        updated: audio.status !== 'workflow_processing'
+                      };
+                    }
+                  } catch (error) {
+                    console.error('查询工作流状态失败:', error);
+                    return { index, audio, updated: false };
+                  }
+                }
               } else if (status === 'failed') {
                 return {
                   index,
@@ -929,6 +1098,15 @@ Page({
             updated_at: new Date()
           }
         });
+
+        // 如果有工作流相关的更新，同时更新工作流信息
+        const workflowUpdates = statusResults.filter(result => 
+          result.updated && (result.audio.workflowExecuteId || result.audio.audioTempUrl)
+        );
+        
+        if (workflowUpdates.length > 0) {
+          console.log('更新工作流相关信息:', workflowUpdates.length, '个任务');
+        }
 
         // 刷新本地任务列表
         await this.loadUserVideoTasks();
@@ -1061,6 +1239,51 @@ Page({
       };
     } catch (error) {
       console.error('下载文件到云存储失败:', error);
+      throw error;
+    }
+  },
+
+  // 下载直接URL到云存储（用于finalVideoUrl等完整URL）
+  async downloadDirectUrlToCloud(directUrl, fileName = null) {
+    try {
+      console.log('开始下载直接URL文件:', directUrl);
+      
+      // 如果没有提供文件名，从URL中提取或生成一个
+      if (!fileName) {
+        const timestamp = Date.now();
+        fileName = `final_video_${timestamp}.mp4`;
+      }
+      
+      // 下载文件到本地临时路径
+      const downloadResult = await new Promise((resolve, reject) => {
+        wx.downloadFile({
+          url: directUrl,
+          success: resolve,
+          fail: reject
+        });
+      });
+
+      if (downloadResult.statusCode !== 200) {
+        throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
+      }
+
+      // 上传到云存储
+      const uploadResult = await wx.cloud.uploadFile({
+        cloudPath: `generated_videos/${fileName}`,
+        filePath: downloadResult.tempFilePath
+      });
+
+      // 获取临时URL
+      const tempUrlResult = await wx.cloud.getTempFileURL({
+        fileList: [uploadResult.fileID]
+      });
+
+      return {
+        fileID: uploadResult.fileID,
+        tempFileURL: tempUrlResult.fileList[0].tempFileURL
+      };
+    } catch (error) {
+      console.error('下载直接URL文件到云存储失败:', error);
       throw error;
     }
   },
