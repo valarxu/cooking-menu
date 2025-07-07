@@ -23,9 +23,7 @@ Page({
     this.checkUserInfo()
   },
 
-  onShow() {
-    this.checkUserInfo()
-  },
+  onShow() {},
 
   // 检查用户信息
   checkUserInfo() {

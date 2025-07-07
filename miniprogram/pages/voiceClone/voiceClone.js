@@ -82,11 +82,7 @@ Page({
     this.loadQueueStats()
   },
 
-  onShow() {
-    // 每次显示页面时刷新用户克隆的声音
-    this.loadUserClonedVoices()
-    this.loadQueueStats()
-  },
+  onShow() { },
 
   onUnload() {
     // 清理资源
@@ -543,9 +539,10 @@ Page({
   uploadAudioToCloud() {
     return new Promise((resolve, reject) => {
       const fileName = `voice_clone_${Date.now()}.mp3`
+      const cloudPath = `voice_clone/${app.globalData.userInfo._openid}/${fileName}`
 
       wx.cloud.uploadFile({
-        cloudPath: `voice_clone/${fileName}`,
+        cloudPath: cloudPath,
         filePath: this.data.recordedAudioPath,
         success: resolve,
         fail: reject
@@ -819,37 +816,85 @@ Page({
     throw new Error(`${taskType}超时：任务执行时间过长`);
   },
 
-  // 保存声音克隆记录到数据库
-  saveVoiceCloneRecord(audioFileID, speaker, audioUrl, synthesizedAudioUrl = null) {
-    return new Promise((resolve, reject) => {
+  // 保存声音克隆记录到数据库（覆盖之前的记录）
+  async saveVoiceCloneRecord(audioFileID, speaker, audioUrl, synthesizedAudioUrl = null) {
+    try {
       const db = wx.cloud.database()
-
-      db.collection('voice_clone_records').add({
+      const userId = app.globalData.userInfo._openid || 'anonymous'
+      
+      // 先查询该用户之前的记录
+      const existingRecords = await db.collection('voice_clone_records')
+        .where({
+          user_id: userId
+        })
+        .get()
+      
+      // 删除之前的云存储文件
+      if (existingRecords.data.length > 0) {
+        const filesToDelete = []
+        existingRecords.data.forEach(record => {
+          if (record.audio_file_id) {
+            filesToDelete.push(record.audio_file_id)
+          }
+          if (record.synthesized_audio_url && record.synthesized_audio_url.startsWith('cloud://')) {
+            filesToDelete.push(record.synthesized_audio_url)
+          }
+        })
+        
+        if (filesToDelete.length > 0) {
+          try {
+            await wx.cloud.deleteFile({
+              fileList: filesToDelete
+            })
+            console.log('已删除之前的云存储文件:', filesToDelete)
+          } catch (deleteError) {
+            console.warn('删除之前的云存储文件失败:', deleteError)
+          }
+        }
+        
+        // 删除数据库中的旧记录
+        for (const record of existingRecords.data) {
+          try {
+            await db.collection('voice_clone_records').doc(record._id).remove()
+          } catch (removeError) {
+            console.warn('删除旧记录失败:', removeError)
+          }
+        }
+        console.log('已删除之前的声音克隆记录')
+      }
+      
+      // 添加新记录
+      const result = await db.collection('voice_clone_records').add({
         data: {
-          user_id: app.globalData.userInfo._openid || 'anonymous',
+          user_id: userId,
           audio_file_id: audioFileID,
           speaker: speaker,
           audio_url: audioUrl,
-          synthesized_audio_url: synthesizedAudioUrl, // 新增合成音频URL字段
+          synthesized_audio_url: synthesizedAudioUrl,
           reference_text: this.data.referenceText,
           status: 'success',
           created_at: new Date(),
           updated_at: new Date()
-        },
-        success: resolve,
-        fail: reject
+        }
       })
-    })
+      
+      console.log('新的声音克隆记录已保存')
+      return result
+    } catch (error) {
+      console.error('保存声音克隆记录失败:', error)
+      throw error
+    }
   },
 
   // 更新声音克隆记录的合成音频URL
-  updateVoiceCloneRecordWithSynthesizedAudio(speaker, synthesizedAudioUrl) {
-    return new Promise((resolve, reject) => {
+  async updateVoiceCloneRecordWithSynthesizedAudio(speaker, synthesizedAudioUrl) {
+    try {
       const db = wx.cloud.database()
+      const userId = app.globalData.userInfo._openid
 
-      db.collection('voice_clone_records')
+      const result = await db.collection('voice_clone_records')
         .where({
-          user_id: app.globalData.userInfo._openid,
+          user_id: userId,
           speaker: speaker,
           status: 'success'
         })
@@ -857,11 +902,15 @@ Page({
           data: {
             synthesized_audio_url: synthesizedAudioUrl,
             updated_at: new Date()
-          },
-          success: resolve,
-          fail: reject
+          }
         })
-    })
+      
+      console.log('声音克隆记录已更新合成音频URL')
+      return result
+    } catch (error) {
+      console.error('更新声音克隆记录失败:', error)
+      throw error
+    }
   },
 
 
@@ -888,7 +937,7 @@ Page({
       synthesizedAudioUrl: cloneData.synthesizedAudioUrl // 保存合成的音频URL
     };
 
-    // 检查是否已存在克隆声音，如果存在则替换
+    // 移除所有之前的克隆声音，只保留最新的
     const voiceList = this.data.voiceList.filter(voice => !voice.isCloned);
     voiceList.push(clonedVoice);
 
@@ -897,7 +946,7 @@ Page({
       selectedVoiceId: clonedVoice.id
     });
 
-    console.log('克隆声音已添加到列表:', clonedVoice);
+    console.log('克隆声音已添加到列表（覆盖之前的克隆声音）:', clonedVoice);
     
     // 验证试听音频是否为合成音频
     if (cloneData.synthesizedAudioUrl) {
@@ -921,18 +970,18 @@ Page({
           status: 'success'
         })
         .orderBy('created_at', 'desc')
-        .limit(1)
+        .limit(1) // 只获取最新的一条记录
         .get();
 
       if (res.data.length > 0) {
         const record = res.data[0];
-        console.log('从数据库加载克隆声音记录:', record);
+        console.log('从数据库加载最新的克隆声音记录:', record);
         
         this.addClonedVoiceToList({
           speaker: record.speaker,
           audioUrl: record.audio_url,
           referenceText: record.reference_text,
-          synthesizedAudioUrl: record.synthesized_audio_url // 从数据库加载合成音频URL
+          synthesizedAudioUrl: record.synthesized_audio_url
         });
         
         // 验证加载的音频URL
@@ -941,6 +990,8 @@ Page({
         } else {
           console.log('⚠ 数据库中未找到合成音频URL，将使用原始训练音频');
         }
+      } else {
+        console.log('未找到该用户的声音克隆记录');
       }
     } catch (error) {
       console.error('加载用户克隆声音失败：', error);
@@ -1052,7 +1103,7 @@ Page({
          
          // 上传到云存储
          const uploadResult = await wx.cloud.uploadFile({
-           cloudPath: `audio/tts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`,
+           cloudPath: `voice_clone/${app.globalData.userInfo._openid}/tts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`,
            filePath: tempFilePath
          });
          
