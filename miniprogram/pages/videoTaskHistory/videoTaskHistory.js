@@ -3,6 +3,10 @@ Page({
     historyList: [], // 历史记录列表，暂时为空
     videoTasks: [], // 视频生成任务列表
     currentAudio: null, // 当前播放的音频实例
+    showDetail: false,
+    currentTask: null,
+    currentSegment: null,
+    currentSegmentIndex: 0,
     // API配置
     apiConfig: {
       baseUrl: 'http://127.0.0.1:3000',
@@ -10,6 +14,40 @@ Page({
       retryAttempts: 3, // API重试次数
       retryDelay: 1000 // 重试延迟（毫秒）
     }
+  },
+
+  // 显示任务详情
+  showTaskDetail: function(e) {
+    const task = e.currentTarget.dataset.task;
+    const firstSegment = task.audio_results && task.audio_results.length > 0 ? task.audio_results[0] : null;
+    
+    this.setData({
+      showDetail: true,
+      currentTask: task,
+      currentSegment: firstSegment,
+      currentSegmentIndex: 0
+    });
+  },
+
+  // 返回列表页
+  backToList: function() {
+    this.setData({
+      showDetail: false,
+      currentTask: null,
+      currentSegment: null,
+      currentSegmentIndex: 0
+    });
+  },
+
+  // 切换分镜
+  switchSegment: function(e) {
+    const index = e.currentTarget.dataset.index;
+    const segment = this.data.currentTask.audio_results[index];
+    
+    this.setData({
+      currentSegmentIndex: index,
+      currentSegment: segment
+    });
   },
 
   onLoad: function (options) {
@@ -59,6 +97,18 @@ Page({
       this.data.currentAudio.stop();
       this.setData({ currentAudio: null });
     }
+  },
+
+  // 格式化日期
+  formatDate(date) {
+    if (!date) return ''
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}`
   },
 
   // 播放生成的音频
@@ -114,14 +164,17 @@ Page({
         .limit(10)
         .get();
 
-      // 为每个任务计算进度百分比
+      console.log("res: ", res);
+
+      // 为每个任务计算进度百分比和格式化时间
       const tasksWithProgress = res.data.map(task => {
         const progress = task.total_tasks > 0
           ? Math.round((task.completed_tasks || 0) / task.total_tasks * 100)
           : 0;
         return {
           ...task,
-          progress
+          progress,
+          created_at: this.formatDate(task.created_at)
         };
       });
 

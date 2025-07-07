@@ -9,7 +9,6 @@
   font-size: 32rpx;
   font-weight: bold;
   color: #333;
-  margin-bottom: 20rpx;
 }
 
 .section-header {
@@ -20,43 +19,15 @@
 }
 
 .refresh-btn {
-  width: 160rpx;
-  height: 60rpx;
+  background: #6C63FF;
+  color: white;
+  border: none;
+  border-radius: 8rpx;
+  padding: 8rpx 16rpx;
   font-size: 24rpx;
 }
 
-/* 声音克隆状态区域 */
-.voice-clone-section {
-  margin-bottom: 40rpx;
-  background: white;
-  border-radius: 16rpx;
-  padding: 40rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
-  text-align: center;
-}
 
-.voice-clone-tip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 30rpx;
-}
-
-.tip-icon {
-  font-size: 80rpx;
-  margin-bottom: 20rpx;
-}
-
-.tip-text {
-  font-size: 28rpx;
-  color: #666;
-  line-height: 1.5;
-}
-
-.clone-voice-btn {
-  width: 300rpx;
-  margin: 0 auto;
-}
 
 /* 上传区域 */
 .upload-section {
@@ -112,46 +83,12 @@
   width: 340rpx;
 }
 
-/* 文案输入区域 */
-.text-section {
-  margin-bottom: 40rpx;
-}
 
-.text-input {
-  width: 100%;
-  min-height: 200rpx;
-  background: white;
-  border-radius: 16rpx;
-  padding: 30rpx;
-  font-size: 28rpx;
-  line-height: 1.6;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
-}
 
-.text-count {
-  text-align: right;
-  font-size: 24rpx;
-  color: #999;
-  margin-top: 10rpx;
-}
-
-/* 生成区域 */
-.generate-section {
+/* 上传按钮区域 */
+.upload-btn-section {
   margin-bottom: 40rpx;
   text-align: center;
-}
-
-.status-tip {
-  margin-top: 20rpx;
-}
-
-.status-text {
-  font-size: 28rpx;
-  color: #6145FF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* 历史记录区域 */
@@ -180,71 +117,28 @@
   margin-bottom: 15rpx;
 }
 
-.video-text {
+.video-name {
   font-size: 28rpx;
   color: #333;
   line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  font-weight: bold;
 }
 
 .video-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 10rpx;
 }
 
-.task-actions {
-  margin-top: 15rpx;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.cancel-btn {
-  width: 120rpx;
-  height: 50rpx;
-  font-size: 22rpx;
-  color: #ff3b30;
-  border-color: #ff3b30;
-}
-
-.create-time {
+.upload-time {
   font-size: 24rpx;
   color: #999;
 }
 
-.status-badge {
-  padding: 8rpx 16rpx;
-  border-radius: 20rpx;
-  font-size: 22rpx;
-  color: white;
-}
-
-.status-generating_audio,
-.status-generating_video {
-  background-color: #ff9500;
-}
-
-.status-completed {
-  background-color: #34c759;
-}
-
-.status-failed {
-  background-color: #ff3b30;
-}
-
-.status-pending {
-  background-color: #007aff;
-}
-
-.status-processing {
-  background-color: #ff9500;
-}
-
-.status-cancelled {
-  background-color: #8e8e93;
+.video-size {
+  font-size: 24rpx;
+  color: #666;
 }
 
 .video-preview-container {
@@ -257,39 +151,7 @@
   height: 300rpx;
 }
 
-.loading-placeholder,
-.error-placeholder,
-.cancelled-placeholder {
-  height: 300rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #f5f5f5;
-}
 
-.loading-text {
-  font-size: 28rpx;
-  color: #999;
-}
-
-.error-text {
-  font-size: 28rpx;
-  color: #ff3b30;
-  margin-bottom: 10rpx;
-}
-
-.error-detail {
-  font-size: 24rpx;
-  color: #999;
-  text-align: center;
-  padding: 0 20rpx;
-}
-
-.cancelled-text {
-  font-size: 28rpx;
-  color: #8e8e93;
-}
 
 /* 空状态 */
 .empty-tip {

@@ -1,52 +1,116 @@
 <view class="container">
-  <view class="page-title">历史生成记录</view>
-  
-  <view class="content {{videoTasks.length === 0 ? 'empty' : ''}}">
-    <!-- 任务状态显示区域 -->
-    <view class="task-status-section" wx:if="{{videoTasks.length > 0}}">
-      <view class="section-header">
-        <text class="section-title">视频生成任务</text>
-        <button class="refresh-btn" bindtap="refreshTaskStatus" size="mini">刷新状态</button>
-      </view>
-      
-      <view class="task-list">
-        <view class="task-item" wx:for="{{videoTasks}}" wx:key="_id">
-          <view class="task-header">
-            <text class="task-time">{{item.created_at}}</text>
-            <view class="task-status-wrapper">
-              <text class="task-status {{item.status}}">{{item.status === 'completed' ? '已完成' : item.status === 'processing' ? '生成中' : '进行中'}}</text>
-              <text class="task-progress" wx:if="{{item.status === 'processing'}}">{{item.completed_tasks || 0}}/{{item.total_tasks || 0}}</text>
+  <!-- 列表页面 -->
+  <view class="list-page" wx:if="{{!showDetail}}">
+    
+    <view class="content {{videoTasks.length === 0 ? 'empty' : ''}}">
+      <!-- 任务列表 -->
+      <view class="task-status-section" wx:if="{{videoTasks.length > 0}}">
+        <view class="section-header">
+          <text class="section-title">视频生成任务列表</text>
+          <view class="refresh-btn" bindtap="refreshTaskStatus" size="mini">刷新</view>
+        </view>
+        
+        <view class="task-list">
+          <view class="task-item-simple" wx:for="{{videoTasks}}" wx:key="_id" bindtap="showTaskDetail" data-task="{{item}}">
+            <view class="task-header">
+              <text class="task-time">{{item.created_at}}</text>
+              <view class="task-status-wrapper">
+                <text class="task-status {{item.status}}">{{item.status === 'completed' ? '已完成' : item.status === 'processing' ? '生成中' : '进行中'}}</text>
+              </view>
             </view>
-          </view>
-          
-          <!-- 进度条 -->
-          <view class="progress-bar" wx:if="{{item.status === 'processing'}}">
-            <view class="progress-fill" style="width: {{item.progress || 0}}%"></view>
-          </view>
-          
-          <view class="audio-results">
-            <view class="audio-item" wx:for="{{item.audio_results}}" wx:for-item="audio" wx:key="taskId">
-              <view class="audio-info">
-                <text class="audio-type">{{audio.type}}</text>
-                <text class="audio-text">{{audio.text}}</text>
-              </view>
-              <view class="audio-status">
-                <text class="status-text {{audio.status}}">
-                  {{audio.status === 'completed' ? '✓' : audio.status === 'pending' ? '⏳' : audio.status === 'processing' ? '🔄' : '✗'}}
-                </text>
-                <button wx:if="{{audio.audioUrl}}" class="play-audio-btn" data-url="{{audio.audioUrl}}" bindtap="playGeneratedAudio" size="mini">播放</button>
-              </view>
+            
+            <!-- 简化的任务信息 -->
+            <view class="task-summary">
+              <text class="task-count">共 {{item.total_tasks}} 个分镜</text>
+              <text class="task-arrow">></text>
             </view>
           </view>
         </view>
       </view>
+      
+      <!-- 空状态 -->
+      <view class="empty-state" wx:else>
+        <image src="/images/empty-product.png" class="empty-icon" mode="aspectFit"></image>
+        <view class="empty-text">暂无生成记录</view>
+        <view class="empty-desc">您还没有创建过视频生成任务</view>
+      </view>
     </view>
-    
-    <!-- 空状态 -->
-    <view class="empty-state" wx:else>
-      <image src="/images/empty-product.png" class="empty-icon" mode="aspectFit"></image>
-      <view class="empty-text">暂无生成记录</view>
-      <view class="empty-desc">您还没有创建过视频生成任务</view>
+  </view>
+
+  <!-- 详情页面 -->
+  <view class="detail-page" wx:if="{{showDetail}}">
+    <view class="detail-header">
+      <view class="back-btn" bindtap="backToList">
+        <text class="back-icon">‹</text>
+        <text class="back-text">返回</text>
+      </view>
+      <text class="detail-title">任务详情</text>
+      <view class="detail-status">
+        <text class="task-status {{currentTask.status}}">{{currentTask.status === 'completed' ? '已完成' : currentTask.status === 'processing' ? '生成中' : '进行中'}}</text>
+      </view>
+    </view>
+
+    <!-- 视频播放区域 -->
+    <view class="video-player-section">
+      <view class="video-container">
+        <video 
+          wx:if="{{currentSegment.finalVideoUrl || currentSegment.videoUrl}}"
+          class="main-video" 
+          src="{{currentSegment.finalVideoUrl || currentSegment.videoUrl}}"
+          controls
+          show-center-play-btn
+          show-play-btn
+          autoplay="{{false}}"
+        ></video>
+        <view wx:else class="video-placeholder">
+          <text class="placeholder-text">{{currentSegment.status === 'completed' ? '视频生成中...' : '等待生成'}}</text>
+        </view>
+      </view>
+      
+      <!-- 当前分镜信息 -->
+      <view class="current-segment-info">
+        <view class="segment-type">{{currentSegment.type}}</view>
+        <view class="segment-text">{{currentSegment.text}}</view>
+      </view>
+    </view>
+
+    <!-- 分镜切换区域 -->
+    <view class="segments-section">
+      <view class="segments-title">分镜列表</view>
+      <scroll-view class="segments-scroll" scroll-x>
+        <view class="segments-list">
+          <view 
+            class="segment-item {{currentSegmentIndex === index ? 'active' : ''}}"
+            wx:for="{{currentTask.audio_results}}"
+            wx:for-item="segment"
+            wx:for-index="index"
+            wx:key="taskId"
+            bindtap="switchSegment"
+            data-index="{{index}}"
+          >
+            <view class="segment-preview">
+              <view class="segment-thumbnail">
+                <image 
+                  wx:if="{{segment.finalVideoUrl || segment.videoUrl}}"
+                  class="thumbnail-image" 
+                  src="{{segment.finalVideoUrl || segment.videoUrl}}"
+                  mode="aspectFill"
+                ></image>
+                <view wx:else class="thumbnail-placeholder">
+                  <text class="thumbnail-icon">📹</text>
+                </view>
+              </view>
+              <view class="segment-status-indicator">
+                <text class="status-dot {{segment.status}}"></text>
+              </view>
+            </view>
+            <view class="segment-info">
+              <text class="segment-type-small">{{segment.type}}</text>
+              <text class="segment-text-small">{{segment.text}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
   </view>
 </view>

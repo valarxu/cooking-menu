@@ -1,20 +1,8 @@
 <view class="container" wx:if="{{hasUserInfo}}">
-  <!-- 声音克隆状态检查 -->
-  <view class="voice-clone-section" wx:if="{{!hasClonedVoice}}">
-    <view class="voice-clone-tip">
-      <text class="tip-icon">🎤</text>
-      <text class="tip-text">您还未克隆声音，请先完成声音克隆</text>
-    </view>
-    <my-button class="clone-voice-btn" type="primary" bindtap="goToVoiceClone">
-      去克隆声音
-    </my-button>
-  </view>
-
   <!-- 上传区域 -->
-  <view class="upload-section" wx:if="{{hasClonedVoice}}">
-    <view class="section-title">上传视频</view>
+  <view class="upload-section">
     <view class="upload-area">
-      <block wx:if="{{!videoFile}}">
+      <block wx:if="{{!selectedVideo}}">
         <view class="choose-btn" bindtap="chooseVideo">
           <text class="upload-icon">📹</text>
           <text class="upload-text">点击上传视频</text>
@@ -22,7 +10,7 @@
         </view>
       </block>
       <block wx:else>
-        <video class="video-preview" src="{{videoFile.tempFilePath}}" controls></video>
+        <video class="video-preview" src="{{selectedVideo.tempFilePath}}" controls></video>
         <view class="video-actions">
           <my-button type="outline" bindtap="reChooseVideo">重新选择</my-button>
         </view>
@@ -30,134 +18,43 @@
     </view>
   </view>
 
-  <!-- 文案输入区域 -->
-  <view class="text-section" wx:if="{{hasClonedVoice}}">
-    <view class="section-title">输入文案内容</view>
-    <textarea 
-      class="text-input" 
-      placeholder="请输入要合成的文案内容..." 
-      value="{{textContent}}"
-      bindinput="onTextInput"
-      maxlength="500"
-      show-confirm-bar="{{false}}"
-    ></textarea>
-    <view class="text-count">{{textContent.length}}/500</view>
-  </view>
 
-  <!-- 生成按钮 -->
-  <view class="generate-section" wx:if="{{hasClonedVoice}}">
-    <my-button 
-      type="gradient" 
-      loading="{{isGenerating}}"
-      disabled="{{isGenerating || !videoFile || !textContent.trim()}}"
-      bindtap="submitDigitalHuman"
-    >
-      {{isGenerating ? '生成中...' : '生成数字人视频'}}
+
+  <!-- 上传按钮 -->
+  <view class="upload-btn-section" wx:if="{{selectedVideo}}">
+    <my-button type="gradient" loading="{{isUploading}}" disabled="{{isUploading || !selectedVideo}}" bindtap="uploadVideo">
+      {{isUploading ? '上传中...' : '上传视频'}}
     </my-button>
-    
-    <!-- 生成状态提示 -->
-    <view class="status-tip" wx:if="{{isGenerating}}">
-      <block wx:if="{{taskStatus === 'generating_audio'}}">
-        <text class="status-text">🎵 正在生成音频...</text>
-      </block>
-      <block wx:elif="{{taskStatus === 'generating_video'}}">
-        <text class="status-text">🎬 正在合成视频...</text>
-      </block>
-    </view>
   </view>
 
-  <!-- 历史记录 -->
+  <!-- 视频列表 -->
   <view class="history-section">
     <view class="section-header">
-      <view class="section-title">我的数字人视频</view>
-      <my-button class="refresh-btn" type="outline" size="small" bindtap="refreshTaskStatus">
-        🔄 刷新状态
-      </my-button>
+      <view class="section-title">我的视频</view>
+      <view class="refresh-btn" bindtap="refreshVideoList" size="mini">刷新</view>
     </view>
-    
+
     <block wx:if="{{digitalHumanList.length > 0}}">
       <view class="video-list">
         <view class="video-item" wx:for="{{digitalHumanList}}" wx:key="_id">
-          <view class="video-info">
-            <view class="video-content">
-              <text class="video-text">{{item.textContent}}</text>
-            </view>
-            <view class="video-meta">
-              <text class="create-time">{{item.createTime}}</text>
-              <view class="status-badge status-{{item.status}}">
-                <block wx:if="{{item.status === 'pending'}}">
-                  <text>等待中</text>
-                </block>
-                <block wx:elif="{{item.status === 'processing'}}">
-                  <text>处理中</text>
-                </block>
-                <block wx:elif="{{item.status === 'generating_audio'}}">
-                  <text>生成音频中</text>
-                </block>
-                <block wx:elif="{{item.status === 'generating_video'}}">
-                  <text>合成视频中</text>
-                </block>
-                <block wx:elif="{{item.status === 'completed'}}">
-                  <text>已完成</text>
-                </block>
-                <block wx:elif="{{item.status === 'failed'}}">
-                  <text>生成失败</text>
-                </block>
-                <block wx:elif="{{item.status === 'cancelled'}}">
-                  <text>已取消</text>
-                </block>
-              </view>
-            </view>
-            
-            <!-- 任务操作按钮 -->
-            <view class="task-actions" wx:if="{{item.status === 'pending' || item.status === 'processing' || item.status === 'generating_audio' || item.status === 'generating_video'}}">
-              <my-button class="cancel-btn" type="outline" size="mini" bindtap="cancelTask" data-task-id="{{item.taskId}}">
-                取消任务
-              </my-button>
-            </view>
-          </view>
-          
           <!-- 视频预览 -->
           <view class="video-preview-container">
-            <block wx:if="{{item.status === 'completed' && item.finalVideoUrl}}">
-              <video 
-                class="result-video" 
-                src="{{item.finalVideoUrl}}" 
-                controls
-                data-url="{{item.finalVideoUrl}}"
-                bindtap="previewVideo"
-              ></video>
-            </block>
-            <block wx:elif="{{item.status === 'pending' || item.status === 'processing' || item.status === 'generating_audio' || item.status === 'generating_video'}}">
-               <view class="loading-placeholder">
-                 <text class="loading-text">
-                   <block wx:if="{{item.status === 'pending'}}">等待中...</block>
-                   <block wx:elif="{{item.status === 'processing'}}">处理中...</block>
-                   <block wx:elif="{{item.status === 'generating_audio'}}">生成音频中...</block>
-                   <block wx:elif="{{item.status === 'generating_video'}}">合成视频中...</block>
-                 </text>
-               </view>
-             </block>
-            <block wx:elif="{{item.status === 'failed'}}">
-              <view class="error-placeholder">
-                <text class="error-text">生成失败</text>
-                <text class="error-detail" wx:if="{{item.errorMessage}}">{{item.errorMessage}}</text>
-              </view>
-            </block>
-            <block wx:elif="{{item.status === 'cancelled'}}">
-              <view class="cancelled-placeholder">
-                <text class="cancelled-text">任务已取消</text>
-              </view>
-            </block>
+            <video class="result-video" src="{{item.fileID}}" controls data-fileid="{{item.fileID}}"></video>
+          </view>
+          <view class="video-info">
+            <view class="video-meta">
+              <text class="upload-time">{{item.uploadTimeFormatted}}</text>
+              <text class="video-size">{{item.size}}MB</text>
+            </view>
           </view>
         </view>
       </view>
     </block>
-    
+
     <view class="empty-tip" wx:else>
-      <text class="empty-icon">🎭</text>
-      <text class="empty-text">暂无数字人视频</text>
-      <text class="empty-desc">上传视频和文案，生成专属数字人视频</text>
+      <text class="empty-icon">📹</text>
+      <text class="empty-text">暂无视频</text>
+      <text class="empty-desc">上传您的第一个视频吧</text>
     </view>
   </view>
 </view>
