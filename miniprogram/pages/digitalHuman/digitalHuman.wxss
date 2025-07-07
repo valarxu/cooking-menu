@@ -109,10 +109,6 @@
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
 }
 
-.video-info {
-  margin-bottom: 20rpx;
-}
-
 .video-content {
   margin-bottom: 15rpx;
 }
@@ -136,9 +132,13 @@
   color: #999;
 }
 
-.video-size {
+.delete-btn {
   font-size: 24rpx;
-  color: #666;
+  color: #ff4757;
+  padding: 8rpx 16rpx;
+  border: 1rpx solid #ff4757;
+  border-radius: 8rpx;
+  background: white;
 }
 
 .video-preview-container {

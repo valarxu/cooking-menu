@@ -44,7 +44,7 @@
           <view class="video-info">
             <view class="video-meta">
               <text class="upload-time">{{item.uploadTimeFormatted}}</text>
-              <text class="video-size">{{item.size}}MB</text>
+              <view class="delete-btn" bindtap="deleteVideo" data-id="{{item._id}}" data-fileid="{{item.fileID}}">删除</view>
             </view>
           </view>
         </view>

@@ -210,6 +210,57 @@ Page({
     this.chooseVideo()
   },
 
+  // 删除视频
+  deleteVideo(e) {
+    const { id, fileid } = e.currentTarget.dataset
+    
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这个视频吗？删除后无法恢复。',
+      confirmText: '删除',
+      confirmColor: '#ff4757',
+      success: (res) => {
+        if (res.confirm) {
+          this.performDelete(id, fileid)
+        }
+      }
+    })
+  },
+
+  // 执行删除操作
+  async performDelete(id, fileID) {
+    wx.showLoading({ title: '删除中...' })
+    
+    try {
+      const db = wx.cloud.database()
+      
+      // 删除数据库记录
+      await db.collection('digitalHumanVideos').doc(id).remove()
+      
+      // 删除云存储文件
+      await wx.cloud.deleteFile({
+        fileList: [fileID]
+      })
+      
+      wx.showToast({
+        title: '删除成功',
+        icon: 'success'
+      })
+      
+      // 刷新列表
+      await this.getDigitalHumanList()
+      
+    } catch (error) {
+      console.error('删除视频失败:', error)
+      wx.showToast({
+        title: '删除失败，请重试',
+        icon: 'none'
+      })
+    } finally {
+      wx.hideLoading()
+    }
+  },
+
   // 下拉刷新
   onPullDownRefresh() {
     this.refreshVideoList().then(() => {
