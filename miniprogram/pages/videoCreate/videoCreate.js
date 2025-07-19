@@ -39,12 +39,13 @@ Page({
     uploadedVoiceFile: null, // 上传的配音文件
     // BGM相关数据已移除
     materialList: [], // 素材库
+    digitalHumanList: [], // 数字人视频列表
     selectedMaterialIds: [],
     // 视频生成任务相关
     videoTasks: [], // 用户的视频生成任务列表
     isGenerating: false, // 是否正在生成视频
     currentAudio: null, // 当前播放的音频实例
-    
+
     // 视频分镜选择相关变量
     showVideoModal: false, // 是否显示视频选择弹窗
     currentSegmentIndex: -1, // 当前选择视频的分镜索引
@@ -95,6 +96,8 @@ Page({
   onLoad(options) {
     // 加载素材库
     this.loadMaterialList();
+    // 加载数字人视频列表
+    this.loadDigitalHumanList();
     // 加载用户克隆的声音
     this.loadUserClonedVoices();
     // 初始化音频上下文
@@ -110,23 +113,7 @@ Page({
     }
   },
 
-  onShow() {
-    // 检查全局数据中是否有生成的文案
-    const app = getApp()
-    if (app.globalData.generatedText) {
-      this.setData({
-        text: app.globalData.generatedText
-      })
-      // 清除全局数据，避免重复使用
-      app.globalData.generatedText = ''
-    }
-    // 每次显示页面时刷新用户克隆的声音
-    this.loadUserClonedVoices();
-    // 刷新用户视频生成任务
-    this.loadUserVideoTasks();
-
-
-  },
+  onShow() { },
 
   onUnload() {
     // 停止当前播放的音频
@@ -147,18 +134,18 @@ Page({
   nextStep() {
     if (this.data.step < 3) {
       const newStep = this.data.step + 1;
-      this.setData({ 
+      this.setData({
         step: newStep,
-        currentStep: newStep 
+        currentStep: newStep
       });
     }
   },
   prevStep() {
     if (this.data.step > 1) {
       const newStep = this.data.step - 1;
-      this.setData({ 
+      this.setData({
         step: newStep,
-        currentStep: newStep 
+        currentStep: newStep
       });
     }
   },
@@ -293,47 +280,47 @@ Page({
   },
 
   // BGM选择相关方法已移除
-  
+
   // 步骤三：素材库加载
   async loadMaterialList() {
     try {
       const db = wx.cloud.database();
       const app = getApp();
-      
+
       // 先获取当前用户的所有产品信息
       const productsRes = await db.collection('products')
         .where({
           _openid: app.globalData.userInfo._openid
         })
         .get();
-      
+
       console.log('获取到的产品列表:', productsRes.data);
-      
+
       // 创建产品ID到产品信息的映射
       const productsMap = {};
       productsRes.data.forEach(product => {
         productsMap[product._id] = product;
       });
-      
+
       const res = await db.collection('videos').where({ _openid: app.globalData.userInfo._openid }).get();
-      
+
       // 为视频添加产品信息
       const videosWithProducts = res.data.map(video => {
         const videoData = {
           ...video,
           productName: ''
         };
-        
+
         // 如果有关联产品，从产品映射中获取产品信息
         if (video.relatedProduct && productsMap[video.relatedProduct]) {
           videoData.productName = productsMap[video.relatedProduct].name;
         }
-        
+
         return videoData;
       });
-      
+
       this.setData({ materialList: videosWithProducts });
-      
+
       // 素材加载完成后，为分镜设置默认视频
       if (videosWithProducts.length > 0) {
         this.setDefaultVideosForSegments();
@@ -411,27 +398,73 @@ Page({
     });
   },
 
-  // 获取数字人视频URL
+  // 加载数字人视频列表
+  async loadDigitalHumanList() {
+    try {
+      const app = getApp();
+      const db = wx.cloud.database();
+
+      const res = await db.collection('digitalHumanVideos')
+        .where({
+          user_id: app.globalData.userInfo._openid
+        })
+        .orderBy('uploadTime', 'desc')
+        .get();
+
+      console.log('获取到的数字人视频列表:', res.data);
+
+      // 处理数据，为每个视频添加格式化的时间和URL
+      const digitalHumanList = res.data.map(item => {
+        return {
+          ...item,
+          url: item.fileID, // 使用fileID作为视频URL
+          uploadTimeFormatted: this.formatDate(item.uploadTime)
+        };
+      });
+
+      this.setData({ digitalHumanList });
+      
+      // 数字人视频加载完成后，为分镜设置默认视频
+      if (digitalHumanList.length > 0) {
+        this.setDefaultVideosForSegments();
+      }
+    } catch (error) {
+      console.error('加载数字人视频列表失败:', error);
+      this.setData({ digitalHumanList: [] });
+    }
+  },
+
+  // 格式化日期
+  formatDate(date) {
+    if (!date) return ''
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}`
+  },
+
+  // 获取数字人视频URL（直接改成获取当前用户全部的数字人视频）
   async getDigitalHumanVideoUrl() {
     try {
       const app = getApp();
       const db = wx.cloud.database();
 
-      // 从digital_humans集合中获取该用户的一个数字人视频
-      const res = await db.collection('digital_humans')
+      // 从digitalHumanVideos集合中获取该用户的所有数字人视频
+      const res = await db.collection('digitalHumanVideos')
         .where({
-          user_id: app.globalData.userInfo._openid,
-          status: 'completed',
-          videoUrl: db.command.exists(true)
+          user_id: app.globalData.userInfo._openid
         })
-        .orderBy('createTime', 'desc')
-        .limit(1)
+        .orderBy('uploadTime', 'desc')
         .get();
 
       if (res.data.length > 0) {
-        return res.data[0].videoUrl;
+        // 返回第一个数字人视频的fileID作为默认URL
+        return res.data[0].fileID;
       } else {
-        throw new Error('未找到可用的数字人视频，请先在数字人页面生成视频');
+        throw new Error('未找到可用的数字人视频，请先在数字人页面上传视频');
       }
     } catch (error) {
       console.error('获取数字人视频URL失败:', error);
@@ -447,11 +480,7 @@ Page({
     // 准备任务数据并并发提交
     const submitPromises = [];
 
-    // 获取数字人视频URL（用于人物出镜类型）
-    let digitalHumanVideoUrl = null;
-    if (this.data.textSegments.some(segment => segment.type === '人物出镜')) {
-      digitalHumanVideoUrl = await this.getDigitalHumanVideoUrl();
-    }
+    // 不再统一获取数字人视频URL，而是使用每个分镜选中的视频
 
     for (let i = 0; i < this.data.textSegments.length; i++) {
       const segment = this.data.textSegments[i];
@@ -473,6 +502,11 @@ Page({
       let submitPromise;
 
       if (segment.type === '人物出镜') {
+        // 检查是否选择了数字人视频
+        if (!segment.selectedVideo || !segment.selectedVideo.url) {
+          throw new Error(`第${i + 1}个分镜（人物出镜）未选择数字人视频`);
+        }
+
         // 调用数字人视频生成接口
         const taskData = {
           ttsParams: {
@@ -492,7 +526,7 @@ Page({
             reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
           },
           videoParams: {
-            video_url: digitalHumanVideoUrl,
+            video_url: segment.selectedVideo.url,
             chaofen: 0,
             watermark_switch: 0,
             pn: 1,
@@ -702,7 +736,7 @@ Page({
       if (result.result.success) {
         const status = result.result.data.data[0].execute_status;
         let finalVideoUrl = null;
-        
+
         if (status === 'Success') {
           // 解析工作流输出结果
           try {
@@ -717,7 +751,7 @@ Page({
             console.error('解析工作流输出失败:', parseError);
           }
         }
-        
+
         return {
           status: status,
           finalVideoUrl: finalVideoUrl
@@ -921,10 +955,10 @@ Page({
                   try {
                     // 下载音频并上传到云存储
                     const audioResult = await this.downloadAndUploadAudio(audioUrl || taskResult);
-                    
+
                     // 调用工作流
                     const workflowResult = await this.callVideoWorkflow(audio, audioResult.tempFileURL);
-                    
+
                     return {
                       index,
                       audio: {
@@ -952,7 +986,7 @@ Page({
                   // 如果已有工作流ID，查询工作流状态
                   try {
                     const workflowResult = await this.queryWorkflowStatus(audio.workflowExecuteId);
-                    
+
                     if (workflowResult.status === 'Success') {
                       // 工作流完成，下载并保存最终视频
                       let finalVideoUrl = null;
@@ -964,7 +998,7 @@ Page({
                           console.error('下载最终视频失败:', downloadError);
                         }
                       }
-                      
+
                       return {
                         index,
                         audio: {
@@ -1067,10 +1101,10 @@ Page({
         });
 
         // 如果有工作流相关的更新，同时更新工作流信息
-        const workflowUpdates = statusResults.filter(result => 
+        const workflowUpdates = statusResults.filter(result =>
           result.updated && (result.audio.workflowExecuteId || result.audio.audioTempUrl)
         );
-        
+
         if (workflowUpdates.length > 0) {
           console.log('更新工作流相关信息:', workflowUpdates.length, '个任务');
         }
@@ -1214,13 +1248,13 @@ Page({
   async downloadDirectUrlToCloud(directUrl, fileName = null) {
     try {
       console.log('开始下载直接URL文件:', directUrl);
-      
+
       // 如果没有提供文件名，从URL中提取或生成一个
       if (!fileName) {
         const timestamp = Date.now();
         fileName = `final_video_${timestamp}.mp4`;
       }
-      
+
       // 下载文件到本地临时路径
       const downloadResult = await new Promise((resolve, reject) => {
         wx.downloadFile({
@@ -1296,29 +1330,52 @@ Page({
   // 显示视频选择弹窗
   showVideoSelector(e) {
     const segmentIndex = e.currentTarget.dataset.index;
-    
-    // 检查是否有素材
-    if (this.data.materialList.length === 0) {
-      wx.showModal({
-        title: '提示',
-        content: '暂无视频素材，请先上传视频素材',
-        showCancel: true,
-        confirmText: '去上传',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({
-              url: '/pages/material/material'
-            });
+    const segment = this.data.textSegments[segmentIndex];
+
+    // 根据分镜类型检查对应的视频列表
+    if (segment.type === '人物出镜') {
+      // 检查是否有数字人视频
+      if (this.data.digitalHumanList.length === 0) {
+        wx.showModal({
+          title: '提示',
+          content: '暂无数字人视频，请先上传数字人视频',
+          showCancel: true,
+          confirmText: '去上传',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({
+                url: '/pages/digitalHuman/digitalHuman'
+              });
+            }
           }
-        }
-      });
-      return;
+        });
+        return;
+      }
+    } else {
+      // 检查是否有普通素材
+      if (this.data.materialList.length === 0) {
+        wx.showModal({
+          title: '提示',
+          content: '暂无视频素材，请先上传视频素材',
+          showCancel: true,
+          confirmText: '去上传',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({
+                url: '/pages/material/material'
+              });
+            }
+          }
+        });
+        return;
+      }
     }
-    
+
     // 获取当前分镜已选择的视频ID
     const currentSelectedVideoId = this.data.textSegments[segmentIndex]?.selectedVideo?._id || '';
-    
+
     this.setData({
       showVideoModal: true,
       currentSegmentIndex: segmentIndex,
@@ -1349,14 +1406,52 @@ Page({
       selectedModalVideoId: videoId
     });
   },
-  
+
+  // 确认选择视频
+  confirmVideoSelection() {
+    const { currentSegmentIndex, selectedModalVideoId, textSegments } = this.data;
+
+    if (currentSegmentIndex === -1 || !selectedModalVideoId) {
+      wx.showToast({ title: '请选择视频', icon: 'none' });
+      return;
+    }
+
+    const segment = textSegments[currentSegmentIndex];
+    let selectedVideo = null;
+
+    // 根据分镜类型从不同的列表中查找视频
+    if (segment.type === '人物出镜') {
+      selectedVideo = this.data.digitalHumanList.find(video => video._id === selectedModalVideoId);
+    } else {
+      selectedVideo = this.data.materialList.find(video => video._id === selectedModalVideoId);
+    }
+
+    if (!selectedVideo) {
+      wx.showToast({ title: '视频不存在', icon: 'none' });
+      return;
+    }
+
+    // 更新分镜的选中视频
+    const updatedSegments = [...this.data.textSegments];
+    updatedSegments[currentSegmentIndex].selectedVideo = selectedVideo;
+
+    this.setData({
+      textSegments: updatedSegments,
+      showVideoModal: false,
+      selectedModalVideoId: '',
+      currentSegmentIndex: -1
+    });
+
+    wx.showToast({ title: '视频选择成功', icon: 'success' });
+  },
+
   // 快速选择视频（直接点击视频项时）
   quickSelectVideo(e) {
     const videoId = e.currentTarget.dataset.videoId;
     const { currentSegmentIndex, materialList, textSegments } = this.data;
-    
+
     const selectedVideo = materialList.find(video => video._id === videoId);
-    
+
     if (selectedVideo && currentSegmentIndex !== -1) {
       const updatedSegments = [...textSegments];
       updatedSegments[currentSegmentIndex].selectedVideo = {
@@ -1366,14 +1461,14 @@ Page({
         type: selectedVideo.type || '未分类',
         productName: selectedVideo.productName || '无'
       };
-      
+
       this.setData({
         textSegments: updatedSegments,
         showVideoModal: false,
         selectedModalVideoId: '',
         currentSegmentIndex: -1
       });
-      
+
       wx.showToast({
         title: '视频选择成功',
         icon: 'success'
@@ -1381,14 +1476,9 @@ Page({
     }
   },
 
-  // 为非"人物出镜"类型的分镜设置默认视频
+  // 为所有类型的分镜设置默认视频
   setDefaultVideosForSegments() {
-    const { textSegments, materialList } = this.data;
-
-    if (materialList.length === 0) {
-      console.log('素材列表为空，无法设置默认视频');
-      return;
-    }
+    const { textSegments, materialList, digitalHumanList } = this.data;
 
     // 按上传时间降序排序素材列表（最新的在前面）
     const sortedMaterialList = [...materialList].sort((a, b) => {
@@ -1397,34 +1487,61 @@ Page({
       return timeB - timeA;
     });
 
+    // 按上传时间降序排序数字人视频列表（最新的在前面）
+    const sortedDigitalHumanList = [...digitalHumanList].sort((a, b) => {
+      const timeA = new Date(a.uploadTime || 0).getTime();
+      const timeB = new Date(b.uploadTime || 0).getTime();
+      return timeB - timeA;
+    });
+
     const updatedSegments = textSegments.map(segment => {
-      // 如果不是"人物出镜"类型且还没有选择视频，则设置默认视频
-      if (segment.type !== '人物出镜' && !segment.selectedVideo) {
+      // 如果还没有选择视频，则设置默认视频
+      if (!segment.selectedVideo) {
         let defaultVideo = null;
         
-        // 优先寻找type一致且时间最近的视频
-        const matchingTypeVideos = sortedMaterialList.filter(video => 
-          video.type === segment.type
-        );
-        
-        if (matchingTypeVideos.length > 0) {
-          // 如果有type一致的视频，选择最新的
-          defaultVideo = matchingTypeVideos[0];
-        } else {
-          // 如果没有type一致的视频，选择最新的视频
-          defaultVideo = sortedMaterialList[0];
-        }
-        
-        return {
-          ...segment,
-          selectedVideo: {
-            _id: defaultVideo._id,
-            name: defaultVideo.name,
-            url: defaultVideo.fileID,
-            type: defaultVideo.type || '未分类',
-            productName: defaultVideo.productName || '无'
+        if (segment.type === '人物出镜') {
+          // 人物出镜类型选择最新的数字人视频
+          if (sortedDigitalHumanList.length > 0) {
+            defaultVideo = sortedDigitalHumanList[0];
+            return {
+              ...segment,
+              selectedVideo: {
+                _id: defaultVideo._id,
+                name: defaultVideo.name,
+                url: defaultVideo.fileID,
+                size: defaultVideo.size || 0,
+                duration: defaultVideo.duration || 0
+              }
+            };
           }
-        };
+        } else {
+          // 其他类型选择普通素材
+          if (sortedMaterialList.length > 0) {
+            // 优先寻找type一致且时间最近的视频
+            const matchingTypeVideos = sortedMaterialList.filter(video => 
+              video.type === segment.type
+            );
+            
+            if (matchingTypeVideos.length > 0) {
+              // 如果有type一致的视频，选择最新的
+              defaultVideo = matchingTypeVideos[0];
+            } else {
+              // 如果没有type一致的视频，选择最新的视频
+              defaultVideo = sortedMaterialList[0];
+            }
+            
+            return {
+              ...segment,
+              selectedVideo: {
+                _id: defaultVideo._id,
+                name: defaultVideo.name,
+                url: defaultVideo.fileID,
+                type: defaultVideo.type || '未分类',
+                productName: defaultVideo.productName || '无'
+              }
+            };
+          }
+        }
       }
       return segment;
     });
@@ -1433,6 +1550,6 @@ Page({
       textSegments: updatedSegments
     });
     
-    console.log('已为分镜设置默认视频');
+    console.log('已为分镜设置默认视频，包括数字人视频');
   },
 })

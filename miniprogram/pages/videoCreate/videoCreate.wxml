@@ -77,24 +77,19 @@
         </view>
         
         <view class="segment-video-selector">
-          <view class="selector-label">视频素材：</view>
+          <view class="selector-label">{{item.type === '人物出镜' ? '数字人视频：' : '视频素材：'}}</view>
           
-          <!-- 人物出镜类型显示数字人提示 -->
-          <view wx:if="{{item.type === '人物出镜'}}" class="digital-human-tip">
-            <view class="tip-content">
-              <text class="tip-text">将使用真人入镜的数字人视频</text>
-            </view>
-          </view>
-          
-          <!-- 其他类型显示视频选择器 -->
-          <view wx:else class="video-selector">
+          <!-- 统一的视频选择器（包括人物出镜类型） -->
+          <view class="video-selector">
             <!-- 已选择视频的预览 -->
             <view wx:if="{{item.selectedVideo}}" class="selected-video">
               <video class="preview-video" src="{{item.selectedVideo.url}}" controls></video>
               <view class="video-info">
                 <text class="video-name">{{item.selectedVideo.name}}</text>
-                <text class="video-type">类型：{{item.selectedVideo.type}}</text>
-                <text class="video-product">关联产品：{{item.selectedVideo.productName}}</text>
+                <text wx:if="{{item.type !== '人物出镜'}}" class="video-type">类型：{{item.selectedVideo.type}}</text>
+                <text wx:if="{{item.type !== '人物出镜'}}" class="video-product">关联产品：{{item.selectedVideo.productName}}</text>
+                <text wx:if="{{item.type === '人物出镜'}}" class="video-size">大小：{{item.selectedVideo.size}}MB</text>
+                <text wx:if="{{item.type === '人物出镜'}}" class="video-duration">时长：{{item.selectedVideo.duration}}秒</text>
               </view>
               <button class="reselect-btn" bindtap="showVideoSelector" data-index="{{index}}">重新选择</button>
             </view>
@@ -103,9 +98,9 @@
             <view wx:else class="no-video">
               <view class="no-video-tip">
                 <text class="no-video-icon">📹</text>
-                <text class="no-video-text">暂未选择视频</text>
+                <text class="no-video-text">{{item.type === '人物出镜' ? '暂未选择数字人视频' : '暂未选择视频'}}</text>
               </view>
-              <button class="select-btn" bindtap="showVideoSelector" data-index="{{index}}">选择视频</button>
+              <button class="select-btn" bindtap="showVideoSelector" data-index="{{index}}">{{item.type === '人物出镜' ? '选择数字人视频' : '选择视频'}}</button>
             </view>
           </view>
         </view>
@@ -162,45 +157,91 @@
   <view class="video-selector-modal {{showVideoModal ? 'show' : ''}}" wx:if="{{showVideoModal}}">
     <view class="modal-content">
       <view class="modal-header">
-        <text class="modal-title">选择视频素材</text>
+        <text class="modal-title">{{textSegments[currentSegmentIndex] && textSegments[currentSegmentIndex].type === '人物出镜' ? '选择数字人视频' : '选择视频素材'}}</text>
         <text class="modal-close" bindtap="hideVideoSelector">×</text>
       </view>
       
       <view class="modal-body">
-        <view wx:if="{{materialList.length > 0}}" class="video-grid">
-          <view 
-            wx:for="{{materialList}}" 
-            wx:key="_id" 
-            class="grid-video-item {{selectedModalVideoId === item._id ? 'selected' : ''}}"
-            bindtap="quickSelectVideo"
-            data-video-id="{{item._id}}"
-          >
-            <view class="video-thumbnail">
-              <video 
-                class="thumbnail-video" 
-                src="{{item.fileID}}" 
-                show-center-play-btn="{{false}}"
-                show-play-btn="{{false}}"
-                muted
-              ></video>
-              <view wx:if="{{selectedModalVideoId === item._id}}" class="select-overlay">
-                <text class="check-icon">✓</text>
+        <!-- 人物出镜类型显示数字人视频列表 -->
+        <view wx:if="{{textSegments[currentSegmentIndex] && textSegments[currentSegmentIndex].type === '人物出镜'}}">
+          <view wx:if="{{digitalHumanList.length > 0}}" class="video-grid">
+            <view 
+              wx:for="{{digitalHumanList}}" 
+              wx:key="_id" 
+              class="grid-video-item {{selectedModalVideoId === item._id ? 'selected' : ''}}"
+              bindtap="selectModalVideo"
+              data-video-id="{{item._id}}"
+            >
+              <view class="video-thumbnail">
+                <video 
+                  class="thumbnail-video" 
+                  src="{{item.fileID}}" 
+                  show-center-play-btn="{{false}}"
+                  show-play-btn="{{false}}"
+                  muted
+                ></video>
+                <view wx:if="{{selectedModalVideoId === item._id}}" class="select-overlay">
+                  <text class="check-icon">✓</text>
+                </view>
               </view>
-            </view>
-            
-            <view class="grid-video-info">
-              <text class="grid-video-name">{{item.name}}</text>
-              <view class="grid-video-meta">
-                <text class="grid-video-type" wx:if="{{item.type}}">类型：{{item.type}}</text>
-                <text class="grid-video-product" wx:if="{{item.productName}}">关联：{{item.productName}}</text>
+              
+              <view class="grid-video-info">
+                <text class="grid-video-name">{{item.name}}</text>
+                <view class="grid-video-meta">
+                  <text class="grid-video-size">大小：{{item.size}}MB</text>
+                  <text class="grid-video-duration">时长：{{item.duration}}秒</text>
+                </view>
               </view>
             </view>
           </view>
+          
+          <view wx:else class="no-material">
+            <text class="no-material-text">暂无数字人视频，请先上传数字人视频</text>
+          </view>
         </view>
         
-        <view wx:else class="no-material">
-          <text class="no-material-text">暂无视频素材，请先上传素材</text>
+        <!-- 其他类型显示普通素材列表 -->
+        <view wx:else>
+          <view wx:if="{{materialList.length > 0}}" class="video-grid">
+            <view 
+              wx:for="{{materialList}}" 
+              wx:key="_id" 
+              class="grid-video-item {{selectedModalVideoId === item._id ? 'selected' : ''}}"
+              bindtap="selectModalVideo"
+              data-video-id="{{item._id}}"
+            >
+              <view class="video-thumbnail">
+                <video 
+                  class="thumbnail-video" 
+                  src="{{item.fileID}}" 
+                  show-center-play-btn="{{false}}"
+                  show-play-btn="{{false}}"
+                  muted
+                ></video>
+                <view wx:if="{{selectedModalVideoId === item._id}}" class="select-overlay">
+                  <text class="check-icon">✓</text>
+                </view>
+              </view>
+              
+              <view class="grid-video-info">
+                <text class="grid-video-name">{{item.name}}</text>
+                <view class="grid-video-meta">
+                  <text class="grid-video-type" wx:if="{{item.type}}">类型：{{item.type}}</text>
+                  <text class="grid-video-product" wx:if="{{item.productName}}">关联：{{item.productName}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+          
+          <view wx:else class="no-material">
+            <text class="no-material-text">暂无视频素材，请先上传素材</text>
+          </view>
         </view>
+      </view>
+      
+      <view class="modal-footer">
+        <button class="cancel-btn" bindtap="hideVideoSelector">取消</button>
+        <button class="confirm-btn" bindtap="confirmVideoSelection" disabled="{{!selectedModalVideoId}}">确认选择</button>
       </view>
     </view>
   </view>
