@@ -37,9 +37,7 @@ Page({
     selectedVoiceId: '',
     playingVoiceId: '',
     uploadedVoiceFile: null, // 上传的配音文件
-    // BGM相关
-    bgmType: 'auto', // auto/upload
-    uploadedBgmFile: null, // 上传的BGM文件
+    // BGM相关数据已移除
     materialList: [], // 素材库
     selectedMaterialIds: [],
     // 视频生成任务相关
@@ -137,7 +135,7 @@ Page({
     }
 
     // 清理音频资源
-    if (this.innerAudioContext) {
+    if (this.innerAudioContext && typeof this.innerAudioContext.destroy === 'function') {
       this.innerAudioContext.destroy();
     }
   },
@@ -147,7 +145,7 @@ Page({
   },
   // 步骤切换
   nextStep() {
-    if (this.data.step < 4) {
+    if (this.data.step < 3) {
       const newStep = this.data.step + 1;
       this.setData({ 
         step: newStep,
@@ -294,40 +292,9 @@ Page({
     }
   },
 
-  // 步骤三：BGM选择相关方法
-  onBgmTypeChange(e) {
-    this.setData({ bgmType: e.detail.value });
-  },
-
-  // 上传BGM文件
-  uploadBgmFile() {
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['audio'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const tempFile = res.tempFiles[0];
-        console.log('选择的BGM文件：', tempFile);
-
-        this.setData({
-          uploadedBgmFile: tempFile
-        });
-
-        wx.showToast({
-          title: 'BGM文件已选择',
-          icon: 'success'
-        });
-      },
-      fail: (err) => {
-        console.error('选择BGM文件失败：', err);
-        wx.showToast({
-          title: '选择文件失败',
-          icon: 'none'
-        });
-      }
-    });
-  },
-  // 步骤三
+  // BGM选择相关方法已移除
+  
+  // 步骤三：素材库加载
   async loadMaterialList() {
     try {
       const db = wx.cloud.database();

@@ -137,29 +137,7 @@
   background: #ff6b6b;
 }
 
-/* BGM选择样式 */
-.bgm-options {
-  margin-bottom: 30rpx;
-}
-.bgm-option {
-  display: block;
-  padding: 20rpx;
-  background: white;
-  border-radius: 16rpx;
-  border: 2rpx solid #f0f0f0;
-  margin-bottom: 16rpx;
-  transition: all 0.3s ease;
-}
-.bgm-option.selected {
-  border-color: #6C63FF;
-  background: #f8f7ff;
-}
-.option-desc {
-  font-size: 24rpx;
-  color: #666;
-  margin-top: 8rpx;
-  margin-left: 40rpx;
-}
+/* BGM选择样式已移除 */
 
 /* 视频素材样式 */
 .video-item {
