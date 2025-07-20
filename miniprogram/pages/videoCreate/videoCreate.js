@@ -238,27 +238,82 @@ Page({
       mediaType: ['audio'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const tempFile = res.tempFiles[0];
-        console.log('选择的音频文件：', tempFile);
-
+        const tempFilePath = res.tempFiles[0].tempFilePath;
+        const fileSize = res.tempFiles[0].size;
+        
+        // 检查文件大小（限制为10MB）
+        if (fileSize > 10 * 1024 * 1024) {
+          wx.showToast({
+            title: '文件大小不能超过10MB',
+            icon: 'none'
+          });
+          return;
+        }
+        
         this.setData({
-          uploadedVoiceFile: tempFile,
-          selectedVoiceId: 'upload' // 标记为上传的文件
+          uploadedVoiceFile: {
+            tempFilePath: tempFilePath,
+            size: fileSize,
+            name: `voice_${Date.now()}.mp3`
+          },
+          selectedVoiceId: 'upload'
         });
-
+        
         wx.showToast({
-          title: '音频文件已选择',
+          title: '配音文件上传成功',
           icon: 'success'
         });
       },
       fail: (err) => {
-        console.error('选择音频文件失败：', err);
+        console.error('选择配音文件失败:', err);
         wx.showToast({
           title: '选择文件失败',
           icon: 'none'
         });
       }
     });
+  },
+
+  // 上传配音文件到云存储
+  async uploadVoiceFileToCloud() {
+    if (!this.data.uploadedVoiceFile) {
+      throw new Error('没有选择配音文件');
+    }
+
+    try {
+      wx.showLoading({ title: '上传配音文件...' });
+
+      // 获取用户openid和当前日期
+      const app = getApp();
+      const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
+      const currentDate = new Date();
+      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+
+      // 构建云存储路径：voice_files/用户openid/日期/文件名
+      const cloudPath = `voice_files/${userOpenid}/${dateStr}/${this.data.uploadedVoiceFile.name}`;
+
+      // 上传到云存储
+      const uploadResult = await wx.cloud.uploadFile({
+        cloudPath: cloudPath,
+        filePath: this.data.uploadedVoiceFile.tempFilePath
+      });
+
+      // 获取临时URL
+      const tempUrlResult = await wx.cloud.getTempFileURL({
+        fileList: [uploadResult.fileID]
+      });
+
+      wx.hideLoading();
+
+      return {
+        fileID: uploadResult.fileID,
+        tempFileURL: tempUrlResult.fileList[0].tempFileURL
+      };
+    } catch (error) {
+      wx.hideLoading();
+      console.error('上传配音文件到云存储失败:', error);
+      throw error;
+    }
   },
 
   // 加载用户克隆的声音
@@ -391,6 +446,18 @@ Page({
       };
     }
 
+    // 如果选择了上传的配音文件，使用whisper-to-video接口
+    if (selectedVoice.type === 'upload') {
+      if (!this.data.uploadedVoiceFile) {
+        wx.showToast({ title: '请先上传配音文件', icon: 'none' });
+        return;
+      }
+      
+      // 使用whisper-to-video接口生成视频
+      await this.submitWhisperToVideoTask();
+      return;
+    }
+
     // 检查是否为克隆声音
     if (selectedVoice.type !== 'clone') {
       wx.showToast({ title: '请选择克隆的声音', icon: 'none' });
@@ -501,6 +568,260 @@ Page({
       throw error;
     }
   },
+
+  // 提交whisper-to-video任务
+  async submitWhisperToVideoTask() {
+    this.setData({ isGenerating: true });
+
+    try {
+      // 1. 先上传配音文件到云存储
+      const voiceFileResult = await this.uploadVoiceFileToCloud();
+      
+      // 2. 获取所有"人物出镜"类型的分镜
+      const characterSegments = this.data.textSegments.filter(segment => segment.type === '人物出镜');
+      
+      if (characterSegments.length === 0) {
+        throw new Error('没有找到"人物出镜"类型的分镜，无法生成数字人视频');
+      }
+      
+      // 3. 按数字人视频去重，相同视频只提交一次
+      const uniqueVideoTasks = new Map();
+      
+      characterSegments.forEach((segment, index) => {
+        if (!segment.selectedVideo || !segment.selectedVideo.url) {
+          throw new Error(`第${index + 1}个"人物出镜"未选择数字人视频`);
+        }
+        
+        const videoUrl = segment.selectedVideo.url;
+        if (!uniqueVideoTasks.has(videoUrl)) {
+          uniqueVideoTasks.set(videoUrl, {
+            segment: segment,
+            originalIndex: this.data.textSegments.indexOf(segment)
+          });
+        }
+      });
+      
+      // 4. 为每个唯一的数字人视频提交任务
+      const submitPromises = [];
+      const taskResults = [];
+      
+      for (const [videoUrl, taskInfo] of uniqueVideoTasks) {
+        const { segment, originalIndex } = taskInfo;
+        
+        // 将微信云存储fileID转换为公网可访问的临时URL
+        let publicVideoUrl = videoUrl;
+        try {
+          const tempUrlResult = await wx.cloud.getTempFileURL({
+            fileList: [videoUrl]
+          });
+          if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
+            publicVideoUrl = tempUrlResult.fileList[0].tempFileURL;
+          }
+        } catch (error) {
+          console.error('获取数字人视频临时URL失败:', error);
+          // 如果获取失败，继续使用原URL
+        }
+        
+        // 准备视频参数
+        const videoParams = {
+          audio_url: voiceFileResult.tempFileURL,
+          video_url: publicVideoUrl,
+          chaofen: 0,
+          watermark_switch: 0,
+          pn: 1,
+          code: this.generateUUID()
+        };
+        
+        // 准备任务数据
+        const taskData = {
+          videoParams: videoParams,
+          textSegments: this.data.textSegments
+        };
+        
+        // 创建提交Promise
+        const submitPromise = this.makeApiRequest('/api/whisper-to-video/submit', taskData, 'POST')
+          .then(result => {
+            if (result && result.taskId) {
+              return {
+                success: true,
+                taskId: result.taskId,
+                taskData: taskData,
+                originalIndex: originalIndex,
+                videoUrl: videoUrl
+              };
+            } else {
+              throw new Error('任务提交失败');
+            }
+          })
+          .catch(error => {
+            return {
+              success: false,
+              error: error.message,
+              originalIndex: originalIndex,
+              videoUrl: videoUrl
+            };
+          });
+          
+        submitPromises.push(submitPromise);
+      }
+      
+      // 5. 等待所有任务提交完成
+      const results = await Promise.all(submitPromises);
+      
+      // 6. 处理提交结果
+      let successCount = 0;
+      let failedCount = 0;
+      
+      for (const result of results) {
+        if (result.success) {
+          successCount++;
+          taskResults.push(result);
+          
+          // 保存任务到数据库
+          await this.saveWhisperToVideoTask(result.taskId, result.taskData, voiceFileResult.fileID);
+        } else {
+          failedCount++;
+          console.error(`视频${result.videoUrl}任务提交失败:`, result.error);
+        }
+      }
+      
+      // 7. 显示提交结果
+       if (successCount > 0) {
+         wx.showToast({
+           title: `成功提交${successCount}个任务${failedCount > 0 ? `，${failedCount}个失败` : ''}`,
+           icon: successCount === results.length ? 'success' : 'none'
+         });
+         
+         // 刷新任务列表，触发状态查询
+         await this.loadUserVideoTasks();
+       } else {
+         throw new Error('所有任务提交失败');
+       }
+      
+    } catch (error) {
+      console.error('提交whisper-to-video任务失败:', error);
+      wx.showToast({
+        title: error.message || '任务提交失败',
+        icon: 'none'
+      });
+      this.setData({ isGenerating: false });
+    }
+  },
+
+  // 保存whisper-to-video任务
+  async saveWhisperToVideoTask(taskId, taskData, voiceFileId) {
+    const app = getApp();
+    if (!app.globalData.userInfo || !app.globalData.userInfo._openid) {
+      throw new Error('用户未登录');
+    }
+
+    try {
+      const db = wx.cloud.database();
+      await db.collection('video_generation_tasks').add({
+        data: {
+          user_id: app.globalData.userInfo._openid,
+          task_id: taskId,
+          task_type: 'whisper-to-video',
+          status: 'processing',
+          video_params: taskData.videoParams,
+          text_segments: taskData.textSegments,
+          voice_file_id: voiceFileId,
+          total_tasks: 1,
+          completed_tasks: 0,
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+      
+      // 刷新任务列表
+      await this.loadUserVideoTasks();
+    } catch (error) {
+      console.error('保存whisper-to-video任务失败:', error);
+      throw error;
+    }
+  },
+
+  // 查询whisper-to-video任务状态
+  async queryWhisperToVideoTaskStatus(taskId) {
+    try {
+      const result = await this.makeApiRequest(`/api/whisper-to-video/status/${taskId}`, null, 'GET');
+      
+      if (result) {
+        // 更新数据库中的任务状态
+        await this.updateWhisperToVideoTaskStatus(taskId, result);
+        
+        // 根据任务状态进行相应处理
+        if (result.status === 'completed') {
+          this.setData({ isGenerating: false });
+          wx.showToast({ title: '视频生成完成！', icon: 'success' });
+        } else if (result.status === 'failed') {
+          this.setData({ isGenerating: false });
+          wx.showToast({ title: '视频生成失败', icon: 'none' });
+        }
+        // processing和pending状态不再自动循环查询，由loadUserVideoTasks控制
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('查询whisper-to-video任务状态失败:', error);
+      throw error;
+    }
+  },
+
+  // 更新whisper-to-video任务状态
+  async updateWhisperToVideoTaskStatus(taskId, result) {
+    try {
+      const db = wx.cloud.database();
+      const updateData = {
+        status: result.status,
+        updated_at: new Date()
+      };
+      
+      if (result.status === 'completed') {
+        updateData.completed_tasks = 1;
+        
+        // 下载并存储视频文件
+        if (result.videoDownloadUrl) {
+          try {
+            const videoResult = await this.downloadFileToCloud(result.videoDownloadUrl, `whisper_video_${taskId}.mp4`);
+            updateData.videoUrl = videoResult.tempFileURL;
+            updateData.local_video_file_id = videoResult.fileID;
+          } catch (error) {
+            console.error('视频下载失败:', error);
+          }
+        }
+        
+        // 下载并存储音频文件（原始配音文件）
+        if (result.audioDownloadUrl) {
+          try {
+            const audioResult = await this.downloadFileToCloud(result.audioDownloadUrl, `whisper_audio_${taskId}.mp3`);
+            updateData.audioUrl = audioResult.tempFileURL;
+            updateData.local_audio_file_id = audioResult.fileID;
+          } catch (error) {
+            console.error('音频下载失败:', error);
+          }
+        }
+        
+        // 存储转录结果
+        if (result.transcriptionResult) {
+          updateData.transcriptionResult = result.transcriptionResult;
+        }
+      }
+      
+      await db.collection('video_generation_tasks')
+        .where({
+          task_id: taskId,
+          task_type: 'whisper-to-video'
+        })
+        .update({
+          data: updateData
+        });
+    } catch (error) {
+      console.error('更新whisper-to-video任务状态失败:', error);
+    }
+  },
+
+
 
   // 批量提交音频生成任务（并发调用单个接口）
   async batchSubmitAudioTasks(voiceData) {
@@ -935,7 +1256,13 @@ Page({
       if (incompleteTasks.length > 0) {
         // 只查询一次状态
         for (const task of incompleteTasks) {
-          await this.queryBatchTaskStatus(task.batch_task_id);
+          if (task.task_type === 'whisper-to-video') {
+            // whisper-to-video任务使用不同的查询方法
+            await this.queryWhisperToVideoTaskStatus(task.task_id);
+          } else {
+            // 普通的批量任务
+            await this.queryBatchTaskStatus(task.batch_task_id);
+          }
         }
       }
     } catch (error) {

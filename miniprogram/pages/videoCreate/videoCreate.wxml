@@ -124,8 +124,9 @@
            <view class="task-header">
              <text class="task-time">{{item.created_at}}</text>
              <view class="task-status-wrapper">
+               <text class="task-type">{{item.task_type === 'whisper-to-video' ? '配音视频' : '数字人视频'}}</text>
                <text class="task-status {{item.status}}">{{item.status === 'completed' ? '已完成' : item.status === 'processing' ? '生成中' : '进行中'}}</text>
-               <text class="task-progress" wx:if="{{item.status === 'processing'}}">{{item.completed_tasks || 0}}/{{item.total_tasks || 0}}</text>
+               <text class="task-progress" wx:if="{{item.status === 'processing' && item.task_type !== 'whisper-to-video'}}">{{item.completed_tasks || 0}}/{{item.total_tasks || 0}}</text>
              </view>
            </view>
            
@@ -134,7 +135,19 @@
              <view class="progress-fill" style="width: {{item.progress || 0}}"></view>
            </view>
            
-           <view class="audio-results">
+           <!-- whisper-to-video任务显示 -->
+           <view wx:if="{{item.task_type === 'whisper-to-video'}}" class="whisper-task-info">
+             <view class="task-info">
+               <text class="task-label">配音文件：</text>
+               <text class="task-value">已上传</text>
+             </view>
+             <view wx:if="{{item.status === 'completed' && item.local_video_url}}" class="video-result">
+               <video class="result-video" src="{{item.local_video_url}}" controls></video>
+             </view>
+           </view>
+           
+           <!-- 普通任务的音频结果显示 -->
+           <view wx:else class="audio-results">
              <view class="audio-item" wx:for="{{item.audio_results}}" wx:for-item="audio" wx:key="taskId">
                <view class="audio-info">
                  <text class="audio-type">{{audio.type}}</text>
