@@ -73,7 +73,7 @@ Page({
       },
       {
         "type": "锁心",
-        "text": "304不锈钢主锁舌+12个隐藏锁点",
+        "text": "304不锈钢主锁舌，12个隐藏锁点。",
         "selectedVideo": null
       },
       {
@@ -83,7 +83,7 @@ Page({
       },
       {
         "type": "店铺环境",
-        "text": "下单就送价值599智能锁！全市免费上门量尺！",
+        "text": "下单就送价值599智能锁，全市免费上门量尺！",
         "selectedVideo": null
       },
       {
@@ -477,79 +477,72 @@ Page({
     const batchTaskId = this.generateUUID();
     const tasks = [];
 
+    // 获取所有"人物出镜"类型的分镜
+    const characterSegments = this.data.textSegments.filter(segment => segment.type === '人物出镜');
+    
+    if (characterSegments.length === 0) {
+      throw new Error('没有找到"人物出镜"类型的分镜');
+    }
+
+    // 拼接所有textSegments的text
+    const allTexts = this.data.textSegments.map(segment => segment.text).join('');
+
+    // 按数字人视频去重，相同视频只提交一次
+    const uniqueVideoTasks = new Map();
+    
+    characterSegments.forEach((segment, index) => {
+      if (!segment.selectedVideo || !segment.selectedVideo.url) {
+        throw new Error(`第${index + 1}个"人物出镜"未选择数字人视频`);
+      }
+
+      const videoUrl = segment.selectedVideo.url;
+      if (!uniqueVideoTasks.has(videoUrl)) {
+        uniqueVideoTasks.set(videoUrl, {
+          segment: segment,
+          originalIndex: this.data.textSegments.indexOf(segment)
+        });
+      }
+    });
+
     // 准备任务数据并并发提交
     const submitPromises = [];
-
-    // 不再统一获取数字人视频URL，而是使用每个分镜选中的视频
-
-    for (let i = 0; i < this.data.textSegments.length; i++) {
-      const segment = this.data.textSegments[i];
+    
+    for (const [videoUrl, taskInfo] of uniqueVideoTasks) {
+      const { segment, originalIndex } = taskInfo;
 
       // 创建任务记录
       const task = {
         taskId: null, // 将在API调用后设置
-        taskType: segment.type,
-        taskIndex: i,
-        text: segment.text,
+        taskType: '人物出镜',
+        taskIndex: originalIndex,
+        text: allTexts, // 使用拼接后的所有文本
         status: 'pending',
         audioUrl: null,
-        videoUrl: null,
+        videoUrl: videoUrl,
         error: null
       };
 
       tasks.push(task);
 
-      let submitPromise;
-
-      if (segment.type === '人物出镜') {
-        // 检查是否选择了数字人视频
-        if (!segment.selectedVideo || !segment.selectedVideo.url) {
-          throw new Error(`第${i + 1}个分镜（人物出镜）未选择数字人视频`);
+      // 将微信云存储fileID转换为公网可访问的临时URL
+      let publicVideoUrl = videoUrl;
+      try {
+        const tempUrlResult = await wx.cloud.getTempFileURL({
+          fileList: [videoUrl]
+        });
+        if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
+          publicVideoUrl = tempUrlResult.fileList[0].tempFileURL;
         }
+      } catch (error) {
+        console.error('获取视频临时URL失败:', error);
+        // 如果获取失败，继续使用原URL
+      }
 
-        // 调用数字人视频生成接口
-        const taskData = {
-          ttsParams: {
-            speaker: this.generateUUID(),
-            text: segment.text,
-            format: 'mp3',
-            topP: 0.7,
-            max_new_tokens: 1024,
-            chunk_length: 100,
-            repetition_penalty: 1.2,
-            temperature: 0.7,
-            need_asr: false,
-            streaming: false,
-            is_fixed_seed: 0,
-            is_norm: 1,
-            reference_audio: voiceData.sampleUrl,
-            reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
-          },
-          videoParams: {
-            video_url: segment.selectedVideo.url,
-            chaofen: 0,
-            watermark_switch: 0,
-            pn: 1,
-            code: this.generateUUID()
-          }
-        };
-
-        submitPromise = this.makeApiRequest('/api/tts-to-video/submit', taskData)
-          .then(result => {
-            task.taskId = result.taskId;
-            task.status = 'processing';
-            return { index: i, taskId: result.taskId, success: true };
-          })
-          .catch(error => {
-            task.status = 'failed';
-            task.error = error.message;
-            return { index: i, error: error.message, success: false };
-          });
-      } else {
-        // 调用普通TTS接口
-        const taskData = {
+      // 调用数字人视频生成接口
+      const taskData = {
+        ttsParams: {
           speaker: this.generateUUID(),
-          text: segment.text,
+          text: allTexts, // 使用拼接后的所有文本
           format: 'mp3',
           topP: 0.7,
           max_new_tokens: 1024,
@@ -562,20 +555,27 @@ Page({
           is_norm: 1,
           reference_audio: voiceData.sampleUrl,
           reference_text: '夏天来喽，又能吃上西瓜啦，我真的太喜欢在空调房吃西瓜了，这种感觉真的超爽!'
-        };
+        },
+        videoParams: {
+          video_url: publicVideoUrl,
+          chaofen: 0,
+          watermark_switch: 0,
+          pn: 1,
+          code: this.generateUUID()
+        }
+      };
 
-        submitPromise = this.makeApiRequest('/api/tts/invoke', taskData)
-          .then(result => {
-            task.taskId = result.taskId;
-            task.status = 'processing';
-            return { index: i, taskId: result.taskId, success: true };
-          })
-          .catch(error => {
-            task.status = 'failed';
-            task.error = error.message;
-            return { index: i, error: error.message, success: false };
-          });
-      }
+      const submitPromise = this.makeApiRequest('/api/tts-to-video/submit', taskData)
+        .then(result => {
+          task.taskId = result.taskId;
+          task.status = 'processing';
+          return { index: originalIndex, taskId: result.taskId, success: true };
+        })
+        .catch(error => {
+          task.status = 'failed';
+          task.error = error.message;
+          return { index: originalIndex, error: error.message, success: false };
+        });
 
       submitPromises.push(submitPromise);
     }
@@ -658,165 +658,9 @@ Page({
     }
   },
 
-  // 检查TTS任务状态
-  checkTTSTaskStatus(taskId) {
-    return new Promise((resolve, reject) => {
-      wx.request({
-        url: `${this.data.apiConfig.baseUrl}/api/tts/status/${taskId}`,
-        method: 'GET',
-        header: {
-          'content-type': 'application/json'
-        },
-        timeout: this.data.apiConfig.timeout,
-        success: (res) => {
-          if (res.statusCode === 200) {
-            resolve({ success: true, data: res.data });
-          } else {
-            resolve({ success: false, error: `查询任务状态失败: ${res.statusCode}` });
-          }
-        },
-        fail: (error) => {
-          resolve({ success: false, error: '网络请求失败' });
-        }
-      });
-    });
-  },
 
-  // 调用视频工作流
-  async callVideoWorkflow(audio, voiceUrl) {
-    try {
-      // 获取视频的临时URL
-      let videoTempUrl = audio.videoUrl;
-      if (audio.videoUrl && !audio.videoUrl.startsWith('http')) {
-        // 如果是fileID，需要获取临时URL
-        const tempUrlResult = await wx.cloud.getTempFileURL({
-          fileList: [audio.videoUrl]
-        });
-        videoTempUrl = tempUrlResult.fileList[0].tempFileURL;
-      }
 
-      const result = await wx.cloud.callFunction({
-        name: 'callCozeWorkflow',
-        data: {
-          workflow_id: '7519489014413770764',
-          parameters: {
-            video: videoTempUrl,   // 分镜选择的视频临时URL
-            text: audio.text,      // 分镜的文本
-            voice: voiceUrl,       // 音频url, TTS生成的
-            voice_type: 'clone'    // 固定值
-          },
-          is_async: true
-        }
-      });
 
-      if (result.result.success) {
-        return {
-          executeId: result.result.data.execute_id
-        };
-      } else {
-        throw new Error(result.result.error || '工作流调用失败');
-      }
-    } catch (error) {
-      console.error('调用工作流失败:', error);
-      throw error;
-    }
-  },
-
-  // 查询工作流状态
-  async queryWorkflowStatus(executeId) {
-    try {
-      const result = await wx.cloud.callFunction({
-        name: 'queryCozeWorkflow',
-        data: {
-          execute_id: executeId,
-          workflow_id: '7519489014413770764'
-        }
-      });
-
-      if (result.result.success) {
-        const status = result.result.data.data[0].execute_status;
-        let finalVideoUrl = null;
-
-        if (status === 'Success') {
-          // 解析工作流输出结果
-          try {
-            const outputData = JSON.parse(result.result.data.data[0].output);
-            const outputContent = JSON.parse(outputData.Output);
-            finalVideoUrl = outputContent.output.trim();
-            // 移除可能的markdown格式
-            if (finalVideoUrl.startsWith('`') && finalVideoUrl.endsWith('`')) {
-              finalVideoUrl = finalVideoUrl.slice(1, -1);
-            }
-          } catch (parseError) {
-            console.error('解析工作流输出失败:', parseError);
-          }
-        }
-
-        return {
-          status: status,
-          finalVideoUrl: finalVideoUrl
-        };
-      } else {
-        throw new Error(result.result.error || '查询工作流状态失败');
-      }
-    } catch (error) {
-      console.error('查询工作流状态失败:', error);
-      throw error;
-    }
-  },
-
-  // 下载音频并上传到云存储
-  downloadAndUploadAudio(audioUrl) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const fullAudioUrl = audioUrl.startsWith('/') ?
-          `${this.data.apiConfig.baseUrl}${audioUrl}` : audioUrl;
-
-        const audioResponse = await new Promise((audioResolve, audioReject) => {
-          wx.request({
-            url: fullAudioUrl,
-            method: 'GET',
-            responseType: 'arraybuffer',
-            success: audioResolve,
-            fail: audioReject
-          });
-        });
-
-        if (audioResponse.statusCode !== 200) {
-          throw new Error(`获取音频数据失败: ${audioResponse.statusCode}`);
-        }
-
-        const fs = wx.getFileSystemManager();
-        const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_audio_${Date.now()}.mp3`;
-
-        fs.writeFileSync(tempFilePath, audioResponse.data);
-
-        const uploadResult = await wx.cloud.uploadFile({
-          cloudPath: `audio/tts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`,
-          filePath: tempFilePath
-        });
-
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (cleanupError) {
-          console.warn('清理临时文件失败:', cleanupError);
-        }
-
-        // 获取临时URL
-        const tempUrlResult = await wx.cloud.getTempFileURL({
-          fileList: [uploadResult.fileID]
-        });
-
-        resolve({
-          fileID: uploadResult.fileID,
-          tempFileURL: tempUrlResult.fileList[0].tempFileURL
-        });
-      } catch (error) {
-        console.error('下载并上传音频失败:', error);
-        reject(error);
-      }
-    });
-  },
 
   // 保存批量视频生成任务到数据库
   async saveBatchVideoGenerationTask(batchTaskId, voiceData, tasks) {
@@ -837,10 +681,24 @@ Page({
       };
     });
 
+    // 保存分镜信息和选择的视频
+    const segmentsInfo = this.data.textSegments.map(segment => ({
+      text: segment.text,
+      type: segment.type,
+      selectedVideo: segment.selectedVideo ? {
+        _id: segment.selectedVideo._id,
+        name: segment.selectedVideo.name,
+        url: segment.selectedVideo.url,
+        type: segment.selectedVideo.type,
+        productName: segment.selectedVideo.productName
+      } : null
+    }));
+
     const taskRecord = {
       user_id: app.globalData.userInfo._openid,
       batch_task_id: batchTaskId,
       voice_data: voiceData,
+      segments_info: segmentsInfo,
       audio_results: audioResults,
       created_at: new Date(),
       status: 'processing',
@@ -884,7 +742,7 @@ Page({
         try {
           let statusResult;
 
-          // 根据任务类型选择不同的状态查询接口
+          // 只处理"人物出镜"类型的数字人视频任务
           if (audio.type === '人物出镜') {
             // 查询数字人视频任务状态
             statusResult = await this.queryTTSToVideoTaskStatus(audio.taskId);
@@ -918,7 +776,8 @@ Page({
                   ...audio,
                   status: 'completed',
                   audioUrl: finalAudioUrl,
-                  videoUrl: finalVideoUrl
+                  videoUrl: finalVideoUrl,
+                  transcriptionResult: statusResult.transcriptionResult
                 },
                 updated: true
               };
@@ -941,120 +800,6 @@ Page({
                 },
                 updated: audio.status !== statusResult.status
               };
-            }
-          } else {
-            // 查询普通TTS任务状态
-            statusResult = await this.checkTTSTaskStatus(audio.taskId);
-            if (statusResult.success && statusResult.data) {
-              const { status, audioUrl, result: taskResult } = statusResult.data;
-
-              if (status === 'completed') {
-                // 如果TTS任务完成但还没有工作流ID，需要调用工作流
-                console.log("TTS任务完成audio: ", audio)
-                if (!audio.workflowExecuteId) {
-                  try {
-                    // 下载音频并上传到云存储
-                    const audioResult = await this.downloadAndUploadAudio(audioUrl || taskResult);
-
-                    // 调用工作流
-                    const workflowResult = await this.callVideoWorkflow(audio, audioResult.tempFileURL);
-
-                    return {
-                      index,
-                      audio: {
-                        ...audio,
-                        status: 'workflow_processing',
-                        audioUrl: audioResult.fileID,
-                        audioTempUrl: audioResult.tempFileURL,
-                        workflowExecuteId: workflowResult.executeId
-                      },
-                      updated: true
-                    };
-                  } catch (error) {
-                    console.error('调用工作流失败:', error);
-                    return {
-                      index,
-                      audio: {
-                        ...audio,
-                        status: 'failed',
-                        error: '工作流调用失败'
-                      },
-                      updated: true
-                    };
-                  }
-                } else {
-                  // 如果已有工作流ID，查询工作流状态
-                  try {
-                    const workflowResult = await this.queryWorkflowStatus(audio.workflowExecuteId);
-
-                    if (workflowResult.status === 'Success') {
-                      // 工作流完成，下载并保存最终视频
-                      let finalVideoUrl = null;
-                      if (workflowResult.finalVideoUrl) {
-                        try {
-                          const videoResult = await this.downloadDirectUrlToCloud(workflowResult.finalVideoUrl);
-                          finalVideoUrl = videoResult.fileID;
-                        } catch (downloadError) {
-                          console.error('下载最终视频失败:', downloadError);
-                        }
-                      }
-
-                      return {
-                        index,
-                        audio: {
-                          ...audio,
-                          status: 'completed',
-                          finalVideoUrl: finalVideoUrl
-                        },
-                        updated: true
-                      };
-                    } else if (workflowResult.status === 'Fail') {
-                      return {
-                        index,
-                        audio: {
-                          ...audio,
-                          status: 'failed',
-                          error: '工作流执行失败'
-                        },
-                        updated: true
-                      };
-                    } else {
-                      // 工作流仍在运行
-                      return {
-                        index,
-                        audio: {
-                          ...audio,
-                          status: 'workflow_processing'
-                        },
-                        updated: audio.status !== 'workflow_processing'
-                      };
-                    }
-                  } catch (error) {
-                    console.error('查询工作流状态失败:', error);
-                    return { index, audio, updated: false };
-                  }
-                }
-              } else if (status === 'failed') {
-                return {
-                  index,
-                  audio: {
-                    ...audio,
-                    status: 'failed',
-                    error: '任务执行失败'
-                  },
-                  updated: true
-                };
-              } else {
-                // 仍在处理中，更新状态但不改变其他信息
-                return {
-                  index,
-                  audio: {
-                    ...audio,
-                    status: status
-                  },
-                  updated: audio.status !== status
-                };
-              }
             }
           }
         } catch (error) {
@@ -1100,14 +845,7 @@ Page({
           }
         });
 
-        // 如果有工作流相关的更新，同时更新工作流信息
-        const workflowUpdates = statusResults.filter(result =>
-          result.updated && (result.audio.workflowExecuteId || result.audio.audioTempUrl)
-        );
 
-        if (workflowUpdates.length > 0) {
-          console.log('更新工作流相关信息:', workflowUpdates.length, '个任务');
-        }
 
         // 刷新本地任务列表
         await this.loadUserVideoTasks();

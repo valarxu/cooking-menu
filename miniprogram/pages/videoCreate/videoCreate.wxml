@@ -116,7 +116,7 @@
      <view class="task-status-section" wx:if="{{videoTasks.length > 0}}">
        <view class="section-header">
          <text class="section-title">视频生成任务</text>
-         <button class="refresh-btn" bindtap="refreshTaskStatus" size="mini">刷新状态</button>
+         <view class="refresh-btn" bindtap="refreshTaskStatus" size="mini">刷新状态</view>
        </view>
        
        <view class="task-list">
