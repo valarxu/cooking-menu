@@ -94,7 +94,9 @@ Page({
       title: '上传中...'
     });
 
-    const cloudPath = `products/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+    const app = getApp();
+    const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
+    const cloudPath = `products/${userOpenid}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
     
     wx.cloud.uploadFile({
       cloudPath: cloudPath,
@@ -266,11 +268,29 @@ Page({
   deleteProduct() {
     const db = wx.cloud.database();
     
+    // 先获取产品信息，得到图片的fileID
     db.collection('products')
       .doc(this.data.productId)
-      .remove()
+      .get()
       .then(res => {
-        console.log('产品删除成功：', res);
+        const product = res.data;
+        
+        // 删除数据库记录
+        return db.collection('products')
+          .doc(this.data.productId)
+          .remove()
+          .then(() => {
+            // 如果有图片，删除云存储中的图片文件
+            if (product.image) {
+              return wx.cloud.deleteFile({
+                fileList: [product.image]
+              });
+            }
+            return Promise.resolve();
+          });
+      })
+      .then(res => {
+        console.log('产品和图片删除成功：', res);
         wx.showToast({
           title: '产品删除成功',
           icon: 'success'
@@ -280,9 +300,9 @@ Page({
         }, 1500);
       })
       .catch(error => {
-        console.error('产品删除失败：', error);
+        console.error('删除失败：', error);
         wx.showToast({
-          title: '产品删除失败',
+          title: '删除失败',
           icon: 'none'
         });
       });

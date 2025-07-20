@@ -961,9 +961,18 @@ Page({
         throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
       }
 
+      // 获取用户openid和当前日期
+      const app = getApp();
+      const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
+      const currentDate = new Date();
+      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      
+      // 构建云存储路径：generated_videos/用户openid/日期/文件名
+      const cloudPath = `generated_videos/${userOpenid}/${dateStr}/${fileName}`;
+      
       // 上传到云存储
       const uploadResult = await wx.cloud.uploadFile({
-        cloudPath: `generated_videos/${fileName}`,
+        cloudPath: cloudPath,
         filePath: downloadResult.tempFilePath
       });
 
@@ -981,53 +990,6 @@ Page({
       throw error;
     }
   },
-
-  // 下载直接URL到云存储（用于finalVideoUrl等完整URL）
-  async downloadDirectUrlToCloud(directUrl, fileName = null) {
-    try {
-      console.log('开始下载直接URL文件:', directUrl);
-
-      // 如果没有提供文件名，从URL中提取或生成一个
-      if (!fileName) {
-        const timestamp = Date.now();
-        fileName = `final_video_${timestamp}.mp4`;
-      }
-
-      // 下载文件到本地临时路径
-      const downloadResult = await new Promise((resolve, reject) => {
-        wx.downloadFile({
-          url: directUrl,
-          success: resolve,
-          fail: reject
-        });
-      });
-
-      if (downloadResult.statusCode !== 200) {
-        throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
-      }
-
-      // 上传到云存储
-      const uploadResult = await wx.cloud.uploadFile({
-        cloudPath: `generated_videos/${fileName}`,
-        filePath: downloadResult.tempFilePath
-      });
-
-      // 获取临时URL
-      const tempUrlResult = await wx.cloud.getTempFileURL({
-        fileList: [uploadResult.fileID]
-      });
-
-      return {
-        fileID: uploadResult.fileID,
-        tempFileURL: tempUrlResult.fileList[0].tempFileURL
-      };
-    } catch (error) {
-      console.error('下载直接URL文件到云存储失败:', error);
-      throw error;
-    }
-  },
-
-
 
   // 播放生成的音频
   playGeneratedAudio(e) {

@@ -557,9 +557,15 @@ Page({
         throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
       }
 
+      // 获取用户openid和当前日期
+      const app = getApp();
+      const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       // 上传到云存储
       const uploadResult = await wx.cloud.uploadFile({
-        cloudPath: `generated_videos/${fileName}`,
+        cloudPath: `generated_videos/${userOpenid}/${dateStr}/${fileName}`,
         filePath: downloadResult.tempFilePath
       });
 
@@ -602,9 +608,15 @@ Page({
         throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
       }
 
+      // 获取用户openid和当前日期
+      const app = getApp();
+      const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       // 上传到云存储
       const uploadResult = await wx.cloud.uploadFile({
-        cloudPath: `generated_videos/${fileName}`,
+        cloudPath: `generated_videos/${userOpenid}/${dateStr}/${fileName}`,
         filePath: downloadResult.tempFilePath
       });
 
@@ -644,10 +656,16 @@ Page({
 
         console.log('音频下载成功，开始上传到云存储');
         
+        // 获取用户openid和当前日期
+        const app = getApp();
+        const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
         // 上传到云存储
         const timestamp = Date.now();
         const uploadResult = await wx.cloud.uploadFile({
-          cloudPath: `generated_audio/audio_${timestamp}.mp3`,
+          cloudPath: `generated_audio/${userOpenid}/${dateStr}/audio_${timestamp}.mp3`,
           filePath: downloadResult.tempFilePath
         });
 
