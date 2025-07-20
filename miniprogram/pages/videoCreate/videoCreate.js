@@ -62,33 +62,63 @@ Page({
     // 预设文案数组
     textSegments: [
       {
+        "text": "杭州的梅雨季又来了，你家安全门底部开始生锈了吗？",
         "type": "人物出镜",
-        "text": "担心小偷盯上你家老式防盗门？",
         "selectedVideo": null
       },
       {
+        "text": "别让潮湿毁了防盗门！",
         "type": "产品外观",
-        "text": "新国标甲4级防盗门来报到！",
         "selectedVideo": null
       },
       {
-        "type": "锁心",
-        "text": "304不锈钢主锁舌，12个隐藏锁点。",
+        "text": "装门记住三看一验：看板材厚度要≥1.2mm",
+        "type": "产品外观",
         "selectedVideo": null
       },
       {
+        "text": "看锁具必须是C级",
+        "type": "智能锁",
+        "selectedVideo": null
+      },
+      {
+        "text": "看防猫眼必须有机械卡扣。",
+        "type": "产品外观",
+        "selectedVideo": null
+      },
+      {
+        "text": "上周给拱墅区王姐换门，发现旧门框有3指宽缝隙",
         "type": "案例呈现",
-        "text": "熊孩子写作业再不怕被吵！",
         "selectedVideo": null
       },
       {
-        "type": "店铺环境",
-        "text": "下单就送价值599智能锁，全市免费上门量尺！",
+        "text": "我们免费灌了8袋水泥加固，现在用液压剪都撬不开。",
+        "type": "案例呈现",
         "selectedVideo": null
       },
       {
+        "text": "15年经手8000多扇门，每把锁芯弹簧我都要亲自听声。",
+        "type": "锁心",
+        "selectedVideo": null
+      },
+      {
+        "text": "前天冒雨去钱江新城调门，客户说‘成师傅你这服务比我亲哥都上心！’",
+        "type": "案例呈现",
+        "selectedVideo": null
+      },
+      {
+        "text": "在杭州做门越久越明白：门缝里藏的不仅是隔音条",
+        "type": "密封胶条",
+        "selectedVideo": null
+      },
+      {
+        "text": "更是一户人家的安全感。",
+        "type": "安全等级",
+        "selectedVideo": null
+      },
+      {
+        "text": "点击这里预约免费勘测，让我看看你家门缝有没有给小偷留‘后门’！",
         "type": "人物出镜",
-        "text": "专业安防师傅驻店，守护万家灯火20年！",
         "selectedVideo": null
       }
     ]
@@ -423,7 +453,7 @@ Page({
       });
 
       this.setData({ digitalHumanList });
-      
+
       // 数字人视频加载完成后，为分镜设置默认视频
       if (digitalHumanList.length > 0) {
         this.setDefaultVideosForSegments();
@@ -479,7 +509,7 @@ Page({
 
     // 获取所有"人物出镜"类型的分镜
     const characterSegments = this.data.textSegments.filter(segment => segment.type === '人物出镜');
-    
+
     if (characterSegments.length === 0) {
       throw new Error('没有找到"人物出镜"类型的分镜');
     }
@@ -489,7 +519,7 @@ Page({
 
     // 按数字人视频去重，相同视频只提交一次
     const uniqueVideoTasks = new Map();
-    
+
     characterSegments.forEach((segment, index) => {
       if (!segment.selectedVideo || !segment.selectedVideo.url) {
         throw new Error(`第${index + 1}个"人物出镜"未选择数字人视频`);
@@ -506,7 +536,7 @@ Page({
 
     // 准备任务数据并并发提交
     const submitPromises = [];
-    
+
     for (const [videoUrl, taskInfo] of uniqueVideoTasks) {
       const { segment, originalIndex } = taskInfo;
 
@@ -966,10 +996,10 @@ Page({
       const userOpenid = app.globalData.userInfo ? app.globalData.userInfo._openid : 'default';
       const currentDate = new Date();
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-      
+
       // 构建云存储路径：generated_videos/用户openid/日期/文件名
       const cloudPath = `generated_videos/${userOpenid}/${dateStr}/${fileName}`;
-      
+
       // 上传到云存储
       const uploadResult = await wx.cloud.uploadFile({
         cloudPath: cloudPath,
@@ -1198,7 +1228,7 @@ Page({
       // 如果还没有选择视频，则设置默认视频
       if (!segment.selectedVideo) {
         let defaultVideo = null;
-        
+
         if (segment.type === '人物出镜') {
           // 人物出镜类型选择最新的数字人视频
           if (sortedDigitalHumanList.length > 0) {
@@ -1218,10 +1248,10 @@ Page({
           // 其他类型选择普通素材
           if (sortedMaterialList.length > 0) {
             // 优先寻找type一致且时间最近的视频
-            const matchingTypeVideos = sortedMaterialList.filter(video => 
+            const matchingTypeVideos = sortedMaterialList.filter(video =>
               video.type === segment.type
             );
-            
+
             if (matchingTypeVideos.length > 0) {
               // 如果有type一致的视频，选择最新的
               defaultVideo = matchingTypeVideos[0];
@@ -1229,7 +1259,7 @@ Page({
               // 如果没有type一致的视频，选择最新的视频
               defaultVideo = sortedMaterialList[0];
             }
-            
+
             return {
               ...segment,
               selectedVideo: {
@@ -1249,7 +1279,7 @@ Page({
     this.setData({
       textSegments: updatedSegments
     });
-    
+
     console.log('已为分镜设置默认视频，包括数字人视频');
   },
 })
