@@ -12,9 +12,10 @@ Page({
   },
 
   // 跳转到新建视频生成任务页面
-  navigateToCreateVideo: function() {
+  navigateToCreateVideo: function(e) {
+    const type = e.currentTarget.dataset.type || 'casual'
     wx.navigateTo({
-      url: '/pages/videoCreate/videoCreate'
+      url: `/pages/videoCreate/videoCreate?type=${type}`
     })
   },
 

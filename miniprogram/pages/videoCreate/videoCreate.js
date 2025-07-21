@@ -3,6 +3,27 @@ Page({
     step: 1,
     currentStep: 1, // 当前步骤，与step保持同步
     text: '',
+    videoType: 'casual', // 视频类型：casual, product, activity, persona, digital
+    showContentForm: false, // 是否显示内容表单
+    
+    // 内容表单相关数据
+    contentTypes: [
+      { id: 'product', name: '产品推广' },
+      { id: 'activity', name: '店内活动宣传' },
+      { id: 'persona', name: '人设打造' }
+    ],
+    selectedType: '',
+    products: [],
+    selectedProduct: '',
+    selectedProductName: '',
+    showProductPicker: false,
+    userRequirement: '',
+    activityPolicy: '',
+    productInfo: '',
+    shopInfo: '',
+    bossInfo: '',
+    outputText: '',
+    contentFormLoading: false,
     // 声音相关
     voiceList: [
       {
@@ -135,10 +156,34 @@ Page({
     // 加载用户视频生成任务
     this.loadUserVideoTasks();
 
+    // 处理不同的视频类型
+    const type = options.type || 'casual'
+    this.setData({
+      videoType: type
+    })
+
+    // 根据类型设置不同的初始状态
+    if (type === 'casual' || type === 'digital') {
+      // 随拍视频和数字人口播：直接进入文案输入步骤
+      this.setData({
+        step: 1,
+        showContentForm: false
+      })
+    } else if (type === 'product' || type === 'activity' || type === 'persona') {
+      // 产品推广、活动宣传、人设视频：先填写内容表单
+      this.setData({
+        step: 0, // 新增步骤0用于内容表单
+        showContentForm: true
+      })
+      this.loadProducts() // 加载商品列表（用于产品推广）
+    }
+
     // 如果从video-text页面跳转过来，接收文案参数
     if (options.text) {
       this.setData({
-        text: decodeURIComponent(options.text)
+        text: decodeURIComponent(options.text),
+        step: 1,
+        showContentForm: false
       })
     }
   },
@@ -1609,4 +1654,163 @@ Page({
 
     console.log('已为分镜设置默认视频，包括数字人视频');
   },
+
+  // 内容表单相关方法
+  // 加载商品列表
+  async loadProducts() {
+    try {
+      const app = getApp()
+      const db = wx.cloud.database()
+      const openid = app.globalData.userInfo?._openid
+      
+      if (!openid) {
+        console.log('用户未登录，无法获取商品列表')
+        return
+      }
+      
+      const res = await db.collection('products')
+        .where({
+          _openid: openid
+        })
+        .orderBy('createTime', 'desc')
+        .get()
+      
+      this.setData({
+        products: res.data
+      })
+    } catch (error) {
+      console.error('获取商品列表失败：', error)
+    }
+  },
+
+  // 显示商品选择器
+  showProductSelector() {
+    this.setData({
+      showProductPicker: true
+    })
+  },
+
+  // 选择商品
+  selectProduct(e) {
+    const productId = e.currentTarget.dataset.productId
+    const productName = e.currentTarget.dataset.productName
+    this.setData({
+      selectedProduct: productId,
+      selectedProductName: productName,
+      showProductPicker: false
+    })
+  },
+
+  // 关闭商品选择器
+  closeProductPicker() {
+    this.setData({
+      showProductPicker: false
+    })
+  },
+
+  // 输入框事件处理
+  onProductInfoInput(e) {
+    this.setData({
+      productInfo: e.detail.value
+    })
+  },
+
+  onActivityPolicyInput(e) {
+    this.setData({
+      activityPolicy: e.detail.value
+    })
+  },
+
+  onShopInfoInput(e) {
+    this.setData({
+      shopInfo: e.detail.value
+    })
+  },
+
+  onBossInfoInput(e) {
+    this.setData({
+      bossInfo: e.detail.value
+    })
+  },
+
+  onUserRequirementInput(e) {
+    this.setData({
+      userRequirement: e.detail.value
+    })
+  },
+
+  // 生成文案
+  async generateContent() {
+    const { videoType, selectedProduct, productInfo, activityPolicy, shopInfo, bossInfo, userRequirement } = this.data
+    
+    // 验证必填字段
+    if (!userRequirement.trim()) {
+      wx.showToast({ title: '请填写用户需求', icon: 'none' })
+      return
+    }
+    
+    if (videoType === 'product') {
+      if (!selectedProduct || !productInfo) {
+        wx.showToast({ title: '请选择商品并填写产品信息', icon: 'none' })
+        return
+      }
+    } else if (videoType === 'activity') {
+      if (!activityPolicy || !shopInfo) {
+        wx.showToast({ title: '请填写活动政策和门店信息', icon: 'none' })
+        return
+      }
+    } else if (videoType === 'persona') {
+      if (!bossInfo || !shopInfo) {
+        wx.showToast({ title: '请填写老板信息和门店信息', icon: 'none' })
+        return
+      }
+    }
+
+    this.setData({ contentFormLoading: true })
+
+    try {
+      // 调用云函数生成文案
+      const result = await wx.cloud.callFunction({
+        name: 'callCozeWorkflow',
+        data: {
+          type: videoType,
+          productInfo,
+          activityPolicy,
+          shopInfo,
+          bossInfo,
+          userRequirement,
+          selectedProduct
+        }
+      })
+
+      if (result.result && result.result.success) {
+        this.setData({
+          outputText: result.result.data,
+          text: result.result.data
+        })
+        wx.showToast({ title: '文案生成成功', icon: 'success' })
+      } else {
+        throw new Error(result.result?.error || '生成失败')
+      }
+    } catch (error) {
+      console.error('生成文案失败：', error)
+      wx.showToast({ title: '生成失败，请重试', icon: 'none' })
+    } finally {
+      this.setData({ contentFormLoading: false })
+    }
+  },
+
+  // 进入下一步（从内容表单到文案输入）
+  proceedToTextInput() {
+    if (!this.data.outputText) {
+      wx.showToast({ title: '请先生成文案', icon: 'none' })
+      return
+    }
+    
+    this.setData({
+      step: 1,
+      showContentForm: false,
+      text: this.data.outputText
+    })
+  }
 })

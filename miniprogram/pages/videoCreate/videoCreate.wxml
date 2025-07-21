@@ -1,4 +1,115 @@
 <view class="video-create-container">
+  <!-- 步骤零：内容表单 -->
+  <view wx:if="{{step === 0 && showContentForm}}">
+    <view class="step-title">
+      {{videoType === 'product' ? '产品推广信息' : videoType === 'activity' ? '活动宣传信息' : '人设打造信息'}}
+    </view>
+    
+    <!-- 产品推广 - 商品选择 -->
+    <view class="section" wx:if="{{videoType === 'product'}}">
+      <view class="section-title">选择商品</view>
+      <view class="product-selector" wx:if="{{products.length > 0}}">
+        <view class="selector-input" bindtap="showProductSelector">
+          <text class="selector-text {{selectedProductName ? '' : 'placeholder'}}">{{selectedProductName || '请选择商品'}}</text>
+          <text class="selector-arrow">></text>
+        </view>
+      </view>
+      <view class="empty-tip" wx:else>
+        <text>暂无商品，请先到产品管理添加商品</text>
+      </view>
+    </view>
+
+    <!-- 产品推广 - 产品信息 -->
+    <view class="section" wx:if="{{videoType === 'product'}}">
+      <view class="section-title">产品信息</view>
+      <textarea 
+        class="textarea-input"
+        placeholder="请输入产品的详细信息，如：产品特色、卖点、使用场景等"
+        value="{{productInfo}}"
+        bindinput="onProductInfoInput"
+        maxlength="300"
+      ></textarea>
+    </view>
+
+    <!-- 店内活动宣传 - 活动优惠政策 -->
+    <view class="section" wx:if="{{videoType === 'activity'}}">
+      <view class="section-title">活动优惠政策</view>
+      <textarea 
+        class="textarea-input"
+        placeholder="请输入活动优惠政策，如：全场8折、买二送一等"
+        value="{{activityPolicy}}"
+        bindinput="onActivityPolicyInput"
+        maxlength="200"
+      ></textarea>
+    </view>
+
+    <!-- 店内活动宣传 - 店铺信息 -->
+    <view class="section" wx:if="{{videoType === 'activity'}}">
+      <view class="section-title">门店信息</view>
+      <textarea 
+        class="textarea-input"
+        placeholder="请输入门店信息，如：门店名称、装修风格、经营特色、服务理念等"
+        value="{{shopInfo}}"
+        bindinput="onShopInfoInput"
+        maxlength="300"
+      ></textarea>
+    </view>
+
+    <!-- 人设打造 - 老板信息 -->
+    <view class="section" wx:if="{{videoType === 'persona'}}">
+      <view class="section-title">老板信息</view>
+      <textarea 
+        class="textarea-input"
+        placeholder="请输入老板信息，如：个人经历、创业故事、经营理念、性格特点等"
+        value="{{bossInfo}}"
+        bindinput="onBossInfoInput"
+        maxlength="300"
+      ></textarea>
+    </view>
+
+    <!-- 人设打造 - 门店信息 -->
+  <view class="section" wx:if="{{videoType === 'persona'}}">
+    <view class="section-title">门店信息</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请输入门店信息，如：门店名称、装修风格、经营特色、服务理念等"
+      value="{{shopInfo}}"
+      bindinput="onShopInfoInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+  <!-- 用户需求输入 -->
+  <view class="section" wx:if="{{videoType === 'product' || videoType === 'activity' || videoType === 'persona'}}">
+    <view class="section-title">用户需求</view>
+    <textarea 
+      class="textarea-input"
+      placeholder="请详细描述您的需求，如：突出产品特色、吸引年轻用户、营造温馨氛围等"
+      value="{{userRequirement}}"
+      bindinput="onUserRequirementInput"
+      maxlength="300"
+    ></textarea>
+  </view>
+
+    <!-- 生成按钮 -->
+    <view class="btn-container">
+      <my-button type="primary" bindtap="generateContent" loading="{{contentFormLoading}}">
+        {{contentFormLoading ? '生成中...' : '生成文案'}}
+      </my-button>
+    </view>
+
+    <!-- 生成结果 -->
+    <view class="result-section" wx:if="{{outputText}}">
+      <view class="section-title">生成的文案</view>
+      <view class="result-content">
+        <text class="result-text">{{outputText}}</text>
+      </view>
+      <view class="btn-container">
+        <my-button type="primary" bindtap="proceedToTextInput">下一步</my-button>
+      </view>
+    </view>
+  </view>
+
   <!-- 步骤一：文案输入 -->
   <view wx:if="{{step === 1}}">
     <view class="step-title">输入文案，生成分镜</view>
@@ -255,6 +366,37 @@
       <view class="modal-footer">
         <button class="cancel-btn" bindtap="hideVideoSelector">取消</button>
         <button class="confirm-btn" bindtap="confirmVideoSelection" disabled="{{!selectedModalVideoId}}">确认选择</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 商品选择弹窗 -->
+  <view class="product-picker-mask" wx:if="{{showProductPicker}}" bindtap="closeProductPicker">
+    <view class="product-picker" catchtap="stopPropagation">
+      <view class="picker-header">
+        <view class="picker-title">选择商品</view>
+        <view class="picker-close" bindtap="closeProductPicker">×</view>
+      </view>
+      <view class="picker-content">
+        <view 
+          class="picker-item {{selectedProduct === item._id ? 'selected' : ''}}"
+          wx:for="{{products}}"
+          wx:key="_id"
+          data-product-id="{{item._id}}"
+          data-product-name="{{item.name}}"
+          bindtap="selectProduct"
+        >
+          <view class="picker-item-info">
+            <text class="picker-item-name">{{item.name}}</text>
+            <text class="picker-item-desc">{{item.description || '暂无描述'}}</text>
+          </view>
+          <view class="picker-item-check" wx:if="{{selectedProduct === item._id}}">
+            <text class="check-icon">✓</text>
+          </view>
+        </view>
+        <view class="empty-tip" wx:if="{{products.length === 0}}">
+          暂无商品数据
+        </view>
       </view>
     </view>
   </view>

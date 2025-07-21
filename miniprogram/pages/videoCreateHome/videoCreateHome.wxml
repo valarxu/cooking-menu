@@ -2,14 +2,73 @@
   <view class="page-title">视频创作</view>
   
   <view class="card-container">
-    <!-- 新建视频生成任务卡片 -->
-    <view class="card" bindtap="navigateToCreateVideo">
+    <!-- 随拍视频卡片 -->
+    <view class="card" bindtap="navigateToCreateVideo" data-type="casual">
       <view class="card-icon">
         <image src="/images/icon/video-create.svg" class="icon" mode="aspectFit"></image>
       </view>
       <view class="card-content">
-        <view class="card-title">新建视频生成任务</view>
-        <view class="card-desc">创建新的视频内容，支持AI生成</view>
+        <view class="card-title">随拍视频</view>
+        <view class="card-desc">输入文案，快速生成随拍风格视频</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.svg" class="arrow" mode="aspectFit"></image>
+      </view>
+    </view>
+    
+    <!-- 产品推广卡片 -->
+    <view class="card" bindtap="navigateToCreateVideo" data-type="product">
+      <view class="card-icon">
+        <image src="/images/icon/product.svg" class="icon" mode="aspectFit"></image>
+      </view>
+      <view class="card-content">
+        <view class="card-title">产品推广</view>
+        <view class="card-desc">选择商品，生成专业产品推广文案</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.svg" class="arrow" mode="aspectFit"></image>
+      </view>
+    </view>
+    
+    <!-- 活动宣传卡片 -->
+    <view class="card" bindtap="navigateToCreateVideo" data-type="activity">
+      <view class="card-icon">
+        <image src="/images/icon/activity.svg" class="icon" mode="aspectFit"></image>
+      </view>
+      <view class="card-content">
+        <view class="card-title">活动宣传</view>
+        <view class="card-desc">填写活动信息，生成吸引人的宣传文案</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.svg" class="arrow" mode="aspectFit"></image>
+      </view>
+    </view>
+    
+    <!-- 人设视频卡片 -->
+    <view class="card" bindtap="navigateToCreateVideo" data-type="persona">
+      <view class="card-icon">
+        <image src="/images/icon/persona.svg" class="icon" mode="aspectFit"></image>
+      </view>
+      <view class="card-content">
+        <view class="card-title">人设视频</view>
+        <view class="card-desc">打造个人IP，展现独特人设魅力</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.svg" class="arrow" mode="aspectFit"></image>
+      </view>
+    </view>
+    
+    <!-- 数字人口播卡片 -->
+    <view class="card" bindtap="navigateToCreateVideo" data-type="digital">
+      <view class="card-icon">
+        <image src="/images/icon/digital-human.svg" class="icon" mode="aspectFit"></image>
+      </view>
+      <view class="card-content">
+        <view class="card-title">数字人口播</view>
+        <view class="card-desc">AI数字人播报，专业播音效果</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.svg" class="arrow" mode="aspectFit"></image>
       </view>
     </view>
     
@@ -21,6 +80,9 @@
       <view class="card-content">
         <view class="card-title">历史生成记录</view>
         <view class="card-desc">查看之前的视频生成任务</view>
+      </view>
+      <view class="card-arrow">
+        <image src="/images/icon/arrow-right.svg" class="arrow" mode="aspectFit"></image>
       </view>
     </view>
   </view>
