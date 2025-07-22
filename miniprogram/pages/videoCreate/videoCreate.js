@@ -228,12 +228,12 @@ Page({
   onTextInput(e) {
     this.setData({ text: e.detail.value });
   },
-  onAIGenerate() {
-    // 跳转到AI文案生成页面（非tabBar页面，使用navigateTo）
-    wx.navigateTo({
-      url: '/pages/video-text/video-text'
-    })
-  },
+  // onAIGenerate() {
+  //   // 跳转到AI文案生成页面（非tabBar页面，使用navigateTo）
+  //   wx.navigateTo({
+  //     url: '/pages/video-text/video-text'
+  //   })
+  // },
   // 步骤二：声音选择相关方法
   // 初始化音频上下文
   initAudioContext() {
@@ -1740,7 +1740,7 @@ Page({
   },
 
   // 生成文案
-  async generateContent() {
+  generateContent() {
     const { videoType, selectedProduct, productInfo, activityPolicy, shopInfo, bossInfo, userRequirement } = this.data
     
     // 验证必填字段
@@ -1768,36 +1768,159 @@ Page({
 
     this.setData({ contentFormLoading: true })
 
-    try {
-      // 调用云函数生成文案
-      const result = await wx.cloud.callFunction({
-        name: 'callCozeWorkflow',
-        data: {
-          type: videoType,
+    // 调用云函数启动异步工作流
+    wx.cloud.callFunction({
+      name: 'callCozeWorkflow',
+      data: {
+        workflow_id: '7512455256439259174',
+        parameters: {
+          contentType: videoType,
           productInfo,
-          activityPolicy,
-          shopInfo,
-          bossInfo,
           userRequirement,
-          selectedProduct
+          shopInfo,
+          activityPolicy,
+          bossInfo,
+        },
+        is_async: true
+      },
+      success: (res) => {
+        console.log('云函数调用成功：', res);
+        if (res.result.success && res.result.data.code === 0) {
+          const executeId = res.result.data.execute_id;
+          if (executeId) {
+            // 开始轮询查询结果
+            this.pollWorkflowResult('7512455256439259174', executeId);
+          } else {
+            wx.showToast({
+              title: '未获取到执行ID',
+              icon: 'none'
+            });
+            this.setData({ contentFormLoading: false });
+          }
+        } else {
+          wx.showToast({
+            title: res.result.error || '启动工作流失败',
+            icon: 'none'
+          });
+          this.setData({ contentFormLoading: false });
         }
-      })
-
-      if (result.result && result.result.success) {
-        this.setData({
-          outputText: result.result.data,
-          text: result.result.data
-        })
-        wx.showToast({ title: '文案生成成功', icon: 'success' })
-      } else {
-        throw new Error(result.result?.error || '生成失败')
+      },
+      fail: (error) => {
+        console.error('云函数调用失败：', error);
+        wx.showToast({
+          title: '请求失败，请重试',
+          icon: 'none'
+        });
+        this.setData({ contentFormLoading: false });
       }
-    } catch (error) {
-      console.error('生成文案失败：', error)
-      wx.showToast({ title: '生成失败，请重试', icon: 'none' })
-    } finally {
-      this.setData({ contentFormLoading: false })
-    }
+    });
+  },
+
+  // 轮询查询工作流结果
+  pollWorkflowResult(workflowId, executeId, maxAttempts = 60) {
+    let attempts = 0;
+    
+    const poll = () => {
+      attempts++;
+      console.log(`第${attempts}次查询工作流结果`);
+      
+      wx.cloud.callFunction({
+        name: 'queryCozeWorkflow',
+        data: {
+          workflow_id: workflowId,
+          execute_id: executeId
+        },
+        success: (res) => {
+          console.log('查询结果：', res);
+          if (res.result.success && res.result.data.code === 0) {
+            const status = res.result.data.data[0].execute_status;
+            
+            if (status === 'Success') {
+              // 工作流完成，处理结果
+              try {
+                const outputData = JSON.parse(res.result.data.data[0].output);
+                const outputContent = JSON.parse(outputData.Output);
+                console.log("outputData: ", outputData)
+                console.log("outputContent: ", outputContent)
+                
+                // 设置生成的文案并直接跳转到下一步
+                this.setData({
+                  outputText: outputContent.output,
+                  text: outputContent.output,
+                  contentFormLoading: false,
+                  step: 1,
+                  showContentForm: false
+                });
+                
+                wx.showToast({
+                  title: '文案生成成功',
+                  icon: 'success'
+                });
+              } catch (error) {
+                console.error('解析响应数据失败：', error);
+                wx.showToast({
+                  title: '解析响应失败',
+                  icon: 'none'
+                });
+                this.setData({ contentFormLoading: false });
+              }
+            } else if (status === 'Fail') {
+              // 工作流失败
+              wx.showToast({
+                title: '工作流执行失败',
+                icon: 'none'
+              });
+              this.setData({ contentFormLoading: false });
+            } else if (status === 'Running') {
+              // 工作流还在运行，继续轮询
+              if (attempts < maxAttempts) {
+                setTimeout(poll, 10000); // 10秒后再次查询
+              } else {
+                wx.showToast({
+                  title: '查询超时，请重试',
+                  icon: 'none'
+                });
+                this.setData({ contentFormLoading: false });
+              }
+            } else {
+              // 未知状态
+              wx.showToast({
+                title: `未知状态: ${status}`,
+                icon: 'none'
+              });
+              this.setData({ contentFormLoading: false });
+            }
+          } else {
+            // 查询失败，重试
+            if (attempts < maxAttempts) {
+              setTimeout(poll, 10000);
+            } else {
+              wx.showToast({
+                title: '查询失败，请重试',
+                icon: 'none'
+              });
+              this.setData({ contentFormLoading: false });
+            }
+          }
+        },
+        fail: (error) => {
+          console.error('查询云函数调用失败：', error);
+          // 查询失败，重试
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 10000);
+          } else {
+            wx.showToast({
+              title: '查询失败，请重试',
+              icon: 'none'
+            });
+            this.setData({ contentFormLoading: false });
+          }
+        }
+      });
+    };
+    
+    // 开始轮询
+    poll();
   },
 
   // 进入下一步（从内容表单到文案输入）

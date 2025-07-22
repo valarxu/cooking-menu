@@ -113,9 +113,9 @@
   <!-- 步骤一：文案输入 -->
   <view wx:if="{{step === 1}}">
     <view class="step-title">输入文案，生成分镜</view>
-    <textarea class="text-input" placeholder="请输入文案 或 用AI生成" value="{{text}}" bindinput="onTextInput" maxlength="{{-1}}"></textarea>
+    <textarea class="text-input" placeholder="请输入文案" value="{{text}}" bindinput="onTextInput" maxlength="{{-1}}"></textarea>
     <view class="btn-container">
-      <my-button wx:if="{{!text}}" type="primary" type="outline" bindtap="onAIGenerate">用AI生成</my-button>
+      <!-- <my-button wx:if="{{!text}}" type="primary" type="outline" bindtap="onAIGenerate">用AI生成</my-button> -->
       <my-button type="primary" bindtap="nextStep">下一步</my-button>
     </view>
   </view>
