@@ -207,7 +207,10 @@ Page({
   },
   // 步骤切换
   nextStep() {
-    if (this.data.step < 3) {
+    if (this.data.step === 1) {
+      // 步骤一：调用分镜生成工作流
+      this.generateSegments();
+    } else if (this.data.step < 3) {
       const newStep = this.data.step + 1;
       this.setData({
         step: newStep,
@@ -227,6 +230,186 @@ Page({
   // 步骤一
   onTextInput(e) {
     this.setData({ text: e.detail.value });
+  },
+
+  // 生成分镜
+  generateSegments() {
+    if (!this.data.text.trim()) {
+      wx.showToast({
+        title: '请先输入文案',
+        icon: 'none'
+      });
+      return;
+    }
+
+    this.setData({ isGenerating: true });
+
+    // 调用云函数启动异步工作流
+    wx.cloud.callFunction({
+      name: 'callCozeWorkflow',
+      data: {
+        workflow_id: '7529028028841607202',
+        parameters: {
+          input: this.data.text
+        },
+        is_async: true
+      },
+      success: (res) => {
+        console.log('分镜工作流调用成功：', res);
+        if (res.result.success && res.result.data.code === 0) {
+          const executeId = res.result.data.execute_id;
+          if (executeId) {
+            // 开始轮询查询结果，复用现有的pollWorkflowResult方法
+            this.pollSegmentWorkflowResult('7529028028841607202', executeId);
+          } else {
+            wx.showToast({
+              title: '未获取到执行ID',
+              icon: 'none'
+            });
+            this.setData({ isGenerating: false });
+          }
+        } else {
+          wx.showToast({
+            title: res.result.error || '启动分镜工作流失败',
+            icon: 'none'
+          });
+          this.setData({ isGenerating: false });
+        }
+      },
+      fail: (error) => {
+        console.error('分镜工作流调用失败：', error);
+        wx.showToast({
+          title: '请求失败，请重试',
+          icon: 'none'
+        });
+        this.setData({ isGenerating: false });
+      }
+    });
+  },
+
+  // 轮询分镜工作流结果
+  pollSegmentWorkflowResult(workflowId, executeId, maxAttempts = 60) {
+    let attempts = 0;
+    
+    const poll = () => {
+      attempts++;
+      console.log(`第${attempts}次查询分镜工作流结果`);
+      
+      wx.cloud.callFunction({
+        name: 'queryCozeWorkflow',
+        data: {
+          workflow_id: workflowId,
+          execute_id: executeId
+        },
+        success: (res) => {
+          console.log('分镜查询结果：', res);
+          if (res.result.success && res.result.data.code === 0) {
+            const status = res.result.data.data[0].execute_status;
+            
+            if (status === 'Success') {
+              // 工作流完成，处理结果
+              try {
+                const outputData = JSON.parse(res.result.data.data[0].output);
+                const outputContent = JSON.parse(outputData.Output);
+                console.log("分镜outputData: ", outputData);
+                console.log("分镜outputContent: ", outputContent);
+                
+                // 处理分镜数据，确保每个分镜都有selectedVideo字段
+                const processedSegments = this.processSegmentsData(outputContent.output || outputContent);
+                
+                // 设置生成的分镜并直接跳转到下一步
+                this.setData({
+                  textSegments: processedSegments,
+                  isGenerating: false,
+                  step: 2,
+                  currentStep: 2
+                });
+                
+                wx.showToast({
+                  title: '分镜生成成功',
+                  icon: 'success'
+                });
+              } catch (error) {
+                console.error('解析分镜响应数据失败：', error);
+                wx.showToast({
+                  title: '解析分镜响应失败',
+                  icon: 'none'
+                });
+                this.setData({ isGenerating: false });
+              }
+            } else if (status === 'Fail') {
+              // 工作流失败
+              wx.showToast({
+                title: '分镜工作流执行失败',
+                icon: 'none'
+              });
+              this.setData({ isGenerating: false });
+            } else if (status === 'Running') {
+              // 工作流还在运行，继续轮询
+              if (attempts < maxAttempts) {
+                 setTimeout(poll, 10000); // 10秒后再次查询
+              } else {
+                wx.showToast({
+                  title: '分镜生成超时，请重试',
+                  icon: 'none'
+                });
+                this.setData({ isGenerating: false });
+              }
+            } else {
+              // 未知状态
+              wx.showToast({
+                title: `未知状态: ${status}`,
+                icon: 'none'
+              });
+              this.setData({ isGenerating: false });
+            }
+          } else {
+            // 查询失败，重试
+            if (attempts < maxAttempts) {
+               setTimeout(poll, 10000);
+            } else {
+              wx.showToast({
+                title: '分镜查询失败，请重试',
+                icon: 'none'
+              });
+              this.setData({ isGenerating: false });
+            }
+          }
+        },
+        fail: (error) => {
+          console.error('分镜查询云函数调用失败：', error);
+          // 查询失败，重试
+          if (attempts < maxAttempts) {
+             setTimeout(poll, 10000);
+          } else {
+            wx.showToast({
+              title: '分镜查询失败，请重试',
+              icon: 'none'
+            });
+            this.setData({ isGenerating: false });
+          }
+        }
+      });
+    };
+    
+    // 开始轮询
+    poll();
+  },
+
+  // 处理分镜数据，确保每个分镜都有selectedVideo字段
+  processSegmentsData(segmentsData) {
+    if (!segmentsData || !Array.isArray(segmentsData)) {
+      console.warn('分镜数据格式不正确:', segmentsData);
+      return [];
+    }
+
+    return segmentsData.map((segment, index) => {
+      return {
+        ...segment,
+        selectedVideo: segment.selectedVideo || null, // 确保有selectedVideo字段
+        id: segment.id || index // 确保有唯一标识
+      };
+    });
   },
   // onAIGenerate() {
   //   // 跳转到AI文案生成页面（非tabBar页面，使用navigateTo）
