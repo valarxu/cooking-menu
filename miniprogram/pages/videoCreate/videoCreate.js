@@ -1874,7 +1874,7 @@ Page({
             } else if (status === 'Running') {
               // 工作流还在运行，继续轮询
               if (attempts < maxAttempts) {
-                setTimeout(poll, 10000); // 10秒后再次查询
+                 setTimeout(poll, 10000); // 10秒后再次查询
               } else {
                 wx.showToast({
                   title: '查询超时，请重试',
@@ -1893,7 +1893,7 @@ Page({
           } else {
             // 查询失败，重试
             if (attempts < maxAttempts) {
-              setTimeout(poll, 10000);
+               setTimeout(poll, 10000);
             } else {
               wx.showToast({
                 title: '查询失败，请重试',
@@ -1907,7 +1907,7 @@ Page({
           console.error('查询云函数调用失败：', error);
           // 查询失败，重试
           if (attempts < maxAttempts) {
-            setTimeout(poll, 10000);
+             setTimeout(poll, 10000);
           } else {
             wx.showToast({
               title: '查询失败，请重试',
