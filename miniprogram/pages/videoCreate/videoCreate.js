@@ -317,13 +317,16 @@ Page({
                 // 处理分镜数据，确保每个分镜都有selectedVideo字段
                 const processedSegments = this.processSegmentsData(outputContent.output || outputContent);
                 
-                // 设置生成的分镜并直接跳转到下一步
+                // 设置生成的分镜
                 this.setData({
                   textSegments: processedSegments,
                   isGenerating: false,
                   step: 2,
                   currentStep: 2
                 });
+                
+                // 为所有分镜选择默认视频
+                this.setDefaultVideosForSegments();
                 
                 wx.showToast({
                   title: '分镜生成成功',
@@ -1802,17 +1805,19 @@ Page({
         } else {
           // 其他类型选择普通素材
           if (sortedMaterialList.length > 0) {
-            // 优先寻找type一致且时间最近的视频
+            // 优先寻找type一致的视频
             const matchingTypeVideos = sortedMaterialList.filter(video =>
               video.type === segment.type
             );
 
             if (matchingTypeVideos.length > 0) {
-              // 如果有type一致的视频，选择最新的
-              defaultVideo = matchingTypeVideos[0];
+              // 如果有type一致的视频，从中随机选择一个
+              const randomIndex = Math.floor(Math.random() * matchingTypeVideos.length);
+              defaultVideo = matchingTypeVideos[randomIndex];
             } else {
-              // 如果没有type一致的视频，选择最新的视频
-              defaultVideo = sortedMaterialList[0];
+              // 如果没有type一致的视频，从所有视频中随机选择
+              const randomIndex = Math.floor(Math.random() * sortedMaterialList.length);
+              defaultVideo = sortedMaterialList[randomIndex];
             }
 
             return {
