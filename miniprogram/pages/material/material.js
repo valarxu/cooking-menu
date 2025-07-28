@@ -23,7 +23,12 @@ Page({
     this.checkUserInfo()
   },
 
-  onShow() {},
+  onShow() {
+    // 页面显示时重新获取视频列表，确保数据是最新的
+    if (this.data.hasUserInfo) {
+      this.getVideoList()
+    }
+  },
 
   // 检查用户信息
   checkUserInfo() {
